@@ -7,14 +7,15 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-print("DRAWSCAPE_PATH")
-print(os.getenv('DRAWSCAPE_PATH'))
-print("ENV")
-print(os.getenv('ENV'))
 
 # Use environment variable for drawscape_path, with a fallback
-drawscape_path = os.getenv('DRAWSCAPE_PATH', os.path.expanduser("~/Sites/factorio-cli/src/drawscape_factorio"))
-sys.path.insert(0, drawscape_path)
+# Need to include the SRC directory to get this to work
+# /Users/russelltaylor/Sites/drawscape-factorio/src
+if os.getenv('ENV') == 'dev':
+    drawscape_path = os.getenv('DRAWSCAPE_PATH')
+    print(f"Drawscape path: {drawscape_path}")
+    sys.path.insert(0, drawscape_path)
+
 
 # Now import the functions from drawscape_factorio
 from drawscape_factorio import create as createFactorio
