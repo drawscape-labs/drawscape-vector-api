@@ -1,0 +1,4 @@
+flask
+svgwrite
+numpy
+python-dotenv
