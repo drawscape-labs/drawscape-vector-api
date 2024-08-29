@@ -2,3 +2,4 @@ flask
 svgwrite
 numpy
 python-dotenv
+drawscape-factorio
