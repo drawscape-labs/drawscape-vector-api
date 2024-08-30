@@ -21,17 +21,45 @@ from drawscape_factorio import parseFUE5
 
 factorio = Blueprint('factorio', __name__)
 
-@factorio.route('/factorio/create', methods=['POST'])
+@factorio.route('/factorio/upload-fue5', methods=['POST'])
 def create_factorio():
-    if not request.data:
-        return jsonify({"error": "No file data in the request"}), 400
+    # print('data', request.data)
+    # print('files', request.files)
+    # print('form', request.form)
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if not file.filename.lower().endswith('.json'):
+        return jsonify({"error": "File must be a JSON file"}), 400
 
     try:
-        file_content = json.loads(request.data)
+        file_content = json.loads(file.read().decode('utf-8'))        
+        
+        if not isinstance(file_content, dict):
+            return jsonify({"error": "Invalid JSON file"}), 400
+        
+        if 'entities' not in file_content:
+            return jsonify({"error": "Missing required key json key, might not be a valid FUE5 file"}), 400
+        
+        if not isinstance(file_content['entities'], list):
+            return jsonify({"error": "The 'entities' key must be an array, might not be a valid FUE5 file"}), 400
+        
+        # If all checks pass, proceed with parsing and creating
         data = parseFUE5(file_content)
         svg = createFactorio(data)
-    except json.JSONDecodeError:
-        return jsonify({"error": "Invalid JSON data"}), 400
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"Invalid JSON data: {str(e)}"}), 400
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
            
     # For now, just return the parsed JSON data
     return svg["svg_string"]
+
+@factorio.route('/factorio/hello-world', methods=['GET'])
+def hello_world():
+    return jsonify({"message": "Hello World"})

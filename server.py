@@ -1,8 +1,10 @@
-from flask import Flask, jsonify
+from flask      import Flask, jsonify
+from flask_cors import CORS
 
 from components.factorio.main import factorio
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.register_blueprint(factorio)
 

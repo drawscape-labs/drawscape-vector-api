@@ -8,5 +8,6 @@ dependencies:
   - svgwrite
   - numpy
   - python-dotenv  
-  - drawscape-factorio
+  # - drawscape-factorio
   - gunicorn
+  - flask-cors

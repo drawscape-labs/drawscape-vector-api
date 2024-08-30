@@ -4,3 +4,4 @@ numpy
 python-dotenv
 drawscape-factorio==0.15.4
 gunicorn
+flask-cors
