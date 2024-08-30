@@ -2,5 +2,5 @@ flask
 svgwrite
 numpy
 python-dotenv
-drawscape-factorio
+drawscape-factorio==0.15.4
 gunicorn
