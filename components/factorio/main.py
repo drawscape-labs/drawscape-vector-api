@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-
 # Use environment variable for drawscape_path, with a fallback
 # Need to include the SRC directory to get this to work
 # /Users/russelltaylor/Sites/drawscape-factorio/src
@@ -15,7 +14,6 @@ if os.getenv('ENV') == 'dev':
     drawscape_path = os.getenv('DRAWSCAPE_PATH')
     print(f"Drawscape path: {drawscape_path}")
     sys.path.insert(0, drawscape_path)
-
 
 # Now import the functions from drawscape_factorio
 from drawscape_factorio import create as createFactorio
@@ -34,15 +32,6 @@ def create_factorio():
         svg = createFactorio(data)
     except json.JSONDecodeError:
         return jsonify({"error": "Invalid JSON data"}), 400
-       
-    
-    
-    # Process the file content (e.g., pass it to createFactorio)
-    # result = createFactorio(file_content)
-    
+           
     # For now, just return the parsed JSON data
     return svg["svg_string"]
-    return jsonify({
-        "result": "Received and parsed JSON data successfully",
-        "data": svg
-    })
