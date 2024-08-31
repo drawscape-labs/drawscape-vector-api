@@ -5,9 +5,12 @@ dependencies:
   - python=3.12
   - pip
   - flask
+  - flask-cors
   - svgwrite
   - numpy
   - python-dotenv  
   # - drawscape-factorio
   - gunicorn
-  - flask-cors
+  - boto3
+  - pip:
+    - flask[async]
