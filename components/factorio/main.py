@@ -75,6 +75,13 @@ async def render_factorial(id):
     print(f"\n\n\n API: Rendering project: {id}")
     file_name = f"{id}.json"    
     try:
+        
+        themeSettings = {
+            'theme_name': request.args.get('theme_name',),
+            'color_scheme': request.args.get('color_scheme'),
+            'show_layers': request.args.getlist('show_layers')
+        }
+        print(f"API: Theme settings: {themeSettings}")        
 
         start_time = time.time()
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
@@ -88,11 +95,7 @@ async def render_factorial(id):
         print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
         
         start_time = time.time()
-        svg_content = createFactorio(json_data, {
-            'theme_name': 'default',
-            'color_scheme': 'flat_blue',
-            'show_layers': ['assets', 'belts', 'walls', 'rails', 'spaceship']
-        })
+        svg_content = createFactorio(json_data, themeSettings)
         print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
 
         svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
@@ -100,10 +103,32 @@ async def render_factorial(id):
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:
-        return jsonify({"error": "SVG not found"}), 404
+        return jsonify({"error": "Project not found"}), 404
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+@factorio.route('/factorio/available-themes', methods=['GET'])
+async def available_themes():
+    themes = [
+        {"slug": "default", "name": "Default (Low Res)"},
+        {"slug": "default_highres", "name": "Default (High Res)"}
+    ]
+    return jsonify({"themes": themes}), 200
+
+
+@factorio.route('/factorio/available-colors', methods=['GET'])
+async def available_colors():
+
+    colors = [
+        'main',
+        'rainbow',
+        'black',
+        'matrix',
+        'easter',
+        'blueprint',
+        'flat_blue'
+    ]
+    return jsonify({"colors": colors}), 200
 
 
 def upload_json_to_s3(json_data, folder_id):
