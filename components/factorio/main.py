@@ -4,6 +4,7 @@ import sys
 import os
 import boto3
 import uuid
+import time
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -22,7 +23,7 @@ if os.getenv('ENV') == 'dev':
 
 # Now import the functions from drawscape_factorio
 from drawscape_factorio import create as createFactorio
-from drawscape_factorio import parseFUE5
+from drawscape_factorio import importFUE5
 
 factorio = Blueprint('factorio', __name__)
 
@@ -55,11 +56,9 @@ async def create_factorio():
         folder_id = str(uuid.uuid4())
         
         # If all checks pass, proceed with parsing and creating
-        data = parseFUE5(file_content)
-        svg = createFactorio(data)
+        data = importFUE5(file_content)
 
-        upload_json_to_s3(file_content, folder_id)        
-        upload_svg_to_s3(svg["svg_string"], folder_id)
+        upload_json_to_s3(data, folder_id)
 
     except json.JSONDecodeError as e:
         return jsonify({"error": f"Invalid JSON data: {str(e)}"}), 400
@@ -70,15 +69,36 @@ async def create_factorio():
     print(f"Uploaded to S3: {folder_id}")
     return folder_id
 
-
 @factorio.route('/factorio/render-project/<id>', methods=['GET'])
 async def render_factorial(id):
-    file_name = f"{id}/image.svg"    
+
+    print(f"\n\n\n API: Rendering project: {id}")
+    file_name = f"{id}.json"    
     try:
+
+        start_time = time.time()
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
-        svg_content = response['Body'].read().decode('utf-8')
+        file_size = response['ContentLength']
+        file_size_mb = file_size / (1024 * 1024)
+        print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
+        print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
         
-        return jsonify({"svg": svg_content}), 200
+        start_time = time.time()
+        json_data = json.loads(response['Body'].read().decode('utf-8'))
+        print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
+        
+        start_time = time.time()
+        svg_content = createFactorio(json_data, {
+            'theme_name': 'default',
+            'color_scheme': 'flat_blue',
+            'show_layers': ['assets', 'belts', 'walls', 'rails', 'spaceship']
+        })
+        print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
+
+        svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
+        print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
+
+        return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:
         return jsonify({"error": "SVG not found"}), 404
     except Exception as e:
@@ -88,7 +108,7 @@ async def render_factorial(id):
 
 def upload_json_to_s3(json_data, folder_id):
     
-    file_name = f"{folder_id}/export.json"
+    file_name = f"{folder_id}.json"
     
     json_string = json.dumps(json_data)
     

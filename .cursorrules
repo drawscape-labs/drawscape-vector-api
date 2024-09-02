@@ -1,0 +1,45 @@
+This project is heavily reliant on our custom Drawscape Factorio python module. 
+
+Here is code examples of how to use the module:
+
+```
+from drawscape_factorio import create as createFactorio
+from drawscape_factorio import importFUE5
+
+# Load the JSON file coming from the FUE5 MOD
+with open('/path/to/exported-entities.json, 'r') as file:
+    json_data = json.load(file)
+
+# Parse the JSON data
+data = importFUE5(json_data)
+
+# Call the create function with the parsed data and settings
+result = createFactorio(data, {
+    'theme_name': 'default',
+    'color_scheme': 'main',
+    'show_layers': ['assets', 'belts', 'walls', 'rails', 'electrical', 'spaceship']
+})
+
+# Save the SVG file
+with open(output_file_name, 'w') as f:
+    f.write(result['svg_string'])
+    ````
+
+Here is my environment.yml that I'm running the project in
+
+name: drawscape_api
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - flask
+  - flask-cors
+  - svgwrite
+  - numpy
+  - python-dotenv  
+  # - drawscape-factorio
+  - gunicorn
+  - boto3
+  - pip:
+    - flask[async]
