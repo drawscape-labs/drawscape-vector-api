@@ -23,7 +23,7 @@ def index():
 
 @app.route('/api/hello', methods=['GET'])
 def hello():
-    return jsonify({"message": "Hello, World!"})
+    return jsonify({"messages": "Hello, World!"})
 
 if __name__ == '__main__':
     print("Starting Flask server...")
