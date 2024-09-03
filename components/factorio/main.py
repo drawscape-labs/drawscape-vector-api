@@ -24,6 +24,7 @@ if os.getenv('ENV') == 'dev':
 # Now import the functions from drawscape_factorio
 from drawscape_factorio import create as createFactorio
 from drawscape_factorio import importFUE5
+from drawscape_factorio import listThemes
 
 factorio = Blueprint('factorio', __name__)
 
@@ -77,9 +78,9 @@ async def render_factorial(id):
     try:
         
         themeSettings = {
-            'theme_name': request.args.get('theme_name',),
-            'color_scheme': request.args.get('color_scheme'),
-            'show_layers': request.args.getlist('show_layers')
+            'theme': request.args.get('theme_name',),
+            'color': request.args.get('color_scheme'),
+            'layers': request.args.getlist('show_layers')
         }
         print(f"API: Theme settings: {themeSettings}")        
 
@@ -109,25 +110,23 @@ async def render_factorial(id):
 
 @factorio.route('/factorio/available-themes', methods=['GET'])
 async def available_themes():
-    themes = [
-        {"slug": "default", "name": "Default (Low Res)"},
-        {"slug": "default_highres", "name": "Default (High Res)"}
-    ]
+    themes = listThemes()
     return jsonify({"themes": themes}), 200
 
 
 @factorio.route('/factorio/available-colors', methods=['GET'])
 async def available_colors():
+    theme = request.args.get('theme')
+    themes = listThemes()
 
-    colors = [
-        'main',
-        'rainbow',
-        'black',
-        'matrix',
-        'easter',
-        'blueprint',
-        'flat_blue'
-    ]
+    # Iterate through themes to find the one with the matching slug
+    selected_theme = next((t for t in themes if t['slug'] == theme), None)
+    
+    if selected_theme:
+        colors = selected_theme.get('colors', {})
+    else:
+        colors = {}
+
     return jsonify({"colors": colors}), 200
 
 
