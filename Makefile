@@ -3,3 +3,6 @@ install:
 
 run:
 	python server.py
+
+hotfix:
+	git add . && git commit -m "Hotfix" && git push production main:master
