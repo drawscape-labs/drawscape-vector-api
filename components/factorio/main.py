@@ -118,8 +118,8 @@ async def render_factorial(id):
         svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
         print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
 
-        memory_usage = process.memory_info().rss  # in bytes
-        print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
+        # memory_usage = process.memory_info().rss  # in bytes
+        # print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
 
         # # Run another memory-heavy operation
         # snapshot2 = tracemalloc.take_snapshot()
