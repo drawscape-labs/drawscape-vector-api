@@ -6,6 +6,9 @@ import boto3
 import uuid
 import time
 import psutil
+import tracemalloc
+import gc
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -43,7 +46,7 @@ async def create_factorio():
         return jsonify({"error": "File must be a JSON file"}), 400
 
     try:
-        file_content = json.loads(file.read().decode('utf-8'))        
+        file_content = json.loads(file.read().decode('utf-8'))
         
         if not isinstance(file_content, dict):
             return jsonify({"error": "Invalid JSON file"}), 400
@@ -76,6 +79,7 @@ async def render_factorial(id):
 
 
     print(f"\n\n\n API: Rendering project: {id}")
+    # tracemalloc.start()
 
     process = psutil.Process()
     memory_usage = process.memory_info().rss  # in bytes
@@ -89,28 +93,34 @@ async def render_factorial(id):
             'color': request.args.get('color_scheme'),
             'layers': request.args.getlist('show_layers')
         }
-        print(f"API: Theme settings: {themeSettings}")        
+        # print(f"API: Theme settings: {themeSettings}")        
 
-        start_time = time.time()
+        # start_time = time.time()
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
-        file_size = response['ContentLength']
-        file_size_mb = file_size / (1024 * 1024)
-        print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
-        print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
+        # file_size = response['ContentLength']
+        # file_size_mb = file_size / (1024 * 1024)
+        # print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
+        # print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
         
-        start_time = time.time()
+        # start_time = time.time()
         json_data = json.loads(response['Body'].read().decode('utf-8'))
-        print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
+        # print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
         
-        start_time = time.time()
+        # start_time = time.time()
         svg_content = createFactorio(json_data, themeSettings)
-        print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
+        # print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
 
         svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
         print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
 
         memory_usage = process.memory_info().rss  # in bytes
         print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
+        gc.collect()
+
+        # Tracing Memory
+        # current, peak = tracemalloc.get_traced_memory()
+        # print(f"Current memory usage: {current / 1024 ** 2} MB; Peak: {peak / 1024 ** 2} MB")
+        # tracemalloc.stop()
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:

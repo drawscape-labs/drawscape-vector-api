@@ -13,5 +13,6 @@ dependencies:
   - gunicorn
   - boto3
   - psutil
+  - tracemalloc
   - pip:
     - flask[async]
