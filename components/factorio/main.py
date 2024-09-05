@@ -6,7 +6,6 @@ import boto3
 import uuid
 import time
 import psutil
-import tracemalloc
 import gc
 
 
@@ -79,7 +78,6 @@ async def render_factorial(id):
 
 
     print(f"\n\n\n API: Rendering project: {id}")
-    # tracemalloc.start()
 
     process = psutil.Process()
     memory_usage = process.memory_info().rss  # in bytes
@@ -116,11 +114,6 @@ async def render_factorial(id):
         memory_usage = process.memory_info().rss  # in bytes
         print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
         gc.collect()
-
-        # Tracing Memory
-        # current, peak = tracemalloc.get_traced_memory()
-        # print(f"Current memory usage: {current / 1024 ** 2} MB; Peak: {peak / 1024 ** 2} MB")
-        # tracemalloc.stop()
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:
