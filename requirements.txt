@@ -8,4 +8,3 @@ drawscape-factorio==0.15.17
 gunicorn
 boto3 # AWS for S3
 psutil
-tracemalloc
