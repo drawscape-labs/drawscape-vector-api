@@ -212,13 +212,13 @@ def upload_svg_to_s3(svg, folder_id):
 
 
 
-@factorio.route('/factorio/render-test', methods=['GET'])
-async def render_test():
+@factorio.route('/factorio/render-test/<id>', methods=['GET'])
+async def render_test(id):
 
     print(f"\n\n\n API: Rendering test")
     print(f"virtual_memory: {(psutil.virtual_memory().total - psutil.virtual_memory().available) / (1024 * 1024):.2f} MB")
 
-    file_name = f"46859a9e-1db8-4373-9d27-ac02930a8074.json"    
+    file_name = f"{id}.json"    
     try:
         
         themeSettings = {
