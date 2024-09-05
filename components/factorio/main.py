@@ -223,6 +223,7 @@ async def render_test():
         
         themeSettings = {
             'theme': 'squares',
+            'color': 'black'
         }
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
         json_data = json.loads(response['Body'].read().decode('utf-8'))
