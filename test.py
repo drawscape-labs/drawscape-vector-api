@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 import time
-import argparse
+import subprocess
 
 async def make_request(session, url):
     async with session.get(url) as response:
@@ -9,6 +9,7 @@ async def make_request(session, url):
         return response.status
 
 async def run_test(url, num_requests, concurrency):
+
     async with aiohttp.ClientSession() as session:
         semaphore = asyncio.Semaphore(concurrency)
         tasks = []
