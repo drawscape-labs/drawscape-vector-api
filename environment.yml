@@ -12,5 +12,6 @@ dependencies:
   # - drawscape-factorio
   - gunicorn
   - boto3
+  - psutil
   - pip:
     - flask[async]

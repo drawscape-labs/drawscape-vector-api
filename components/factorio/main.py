@@ -5,6 +5,7 @@ import os
 import boto3
 import uuid
 import time
+import psutil
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -73,7 +74,13 @@ async def create_factorio():
 @factorio.route('/factorio/render-project/<id>', methods=['GET'])
 async def render_factorial(id):
 
+
     print(f"\n\n\n API: Rendering project: {id}")
+
+    process = psutil.Process()
+    memory_usage = process.memory_info().rss  # in bytes
+    print(f"--Memory API Start: {memory_usage / 1024 ** 2} MB")    
+
     file_name = f"{id}.json"    
     try:
         
@@ -101,6 +108,9 @@ async def render_factorial(id):
 
         svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
         print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
+
+        memory_usage = process.memory_info().rss  # in bytes
+        print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:

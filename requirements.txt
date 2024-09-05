@@ -7,3 +7,4 @@ python-dotenv
 drawscape-factorio==0.15.15
 gunicorn
 boto3 # AWS for S3
+psutil
