@@ -77,71 +77,38 @@ async def create_factorio():
 @factorio.route('/factorio/render-project/<id>', methods=['GET'])
 async def render_factorial(id):
 
-    # Start tracking memory allocations
-    # tracemalloc.start()
-
-    # Take a snapshot after some memory-intensive operations
-    # snapshot1 = tracemalloc.take_snapshot()
-    # print(f"API: Memory snapshot 1: {snapshot1}")
-
     print(f"\n\n\n API: Rendering project: {id}")
-
-    # process = psutil.Process()
-    # memory_usage = process.memory_info().rss  # in bytes
-    # print(f"--Memory API Start: {memory_usage / 1024 ** 2} MB")    
 
     file_name = f"{id}.json"    
     try:
         
+        layers_string = request.args.get('layers', '')
+        layers = layers_string.split(',') if layers_string else []
+
         themeSettings = {
             'theme': request.args.get('theme_name',),
             'color': request.args.get('color_scheme'),
-            'layers': request.args.getlist('show_layers')
+            'layers': layers
         }
-        # print(f"API: Theme settings: {themeSettings}")        
 
-        start_time = time.time()
+        # start_time = time.time()
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
-        file_size = response['ContentLength']
-        file_size_mb = file_size / (1024 * 1024)
-        print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
-        print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
+        # file_size = response['ContentLength']
+        # file_size_mb = file_size / (1024 * 1024)
+        # print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
+        # print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
         
-        start_time = time.time()
+        # start_time = time.time()
         json_data = json.loads(response['Body'].read().decode('utf-8'))
-        print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
+        # print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
         
-        start_time = time.time()
+        # start_time = time.time()
         svg_content = createFactorio(json_data, themeSettings)
         del json_data
-        print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
+        # print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
 
-        svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
-        print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
-
-        # memory_usage = process.memory_info().rss  # in bytes
-        # print(f"--Memory API End: {memory_usage / 1024 ** 2} MB")    
-
-        # # Run another memory-heavy operation
-        # snapshot2 = tracemalloc.take_snapshot()
-        # # Compare snapshots and show the differences
-        # top_stats = snapshot2.compare_to(snapshot1, 'lineno')
-
-        # # Get statistics by traceback (to see what's holding memory)
-        # stats = snapshot2.statistics('traceback')
-
-        # print(f"Top 10 memory blocks:")
-        # for stat in stats[:10]:
-        #     print(stat)
-        #     # Print the traceback of the allocation
-        #     for line in stat.traceback.format():
-        #         print(line)
-
-        # print("[ Top 10 memory allocations ]")
-        # for stat in top_stats[:10]:
-        #     print(stat)
-
-        # tracemalloc.stop()
+        # svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
+        # print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:
@@ -217,7 +184,7 @@ def upload_svg_to_s3(svg, folder_id):
 async def render_test(id):
 
     print(f"\n\n\n API: Rendering test")
-    print(f"virtual_memory: {(psutil.virtual_memory().total - psutil.virtual_memory().available) / (1024 * 1024):.2f} MB")
+    print(f"virtual_memory:  {(psutil.virtual_memory().total - psutil.virtual_memory().available) / (1024 * 1024):.2f} MB")
 
     file_name = f"{id}.json"    
     try:
