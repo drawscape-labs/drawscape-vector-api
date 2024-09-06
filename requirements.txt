@@ -4,7 +4,7 @@ flask-cors
 svgwrite
 numpy
 python-dotenv
-drawscape-factorio==0.15.17
+drawscape-factorio==0.15.18
 gunicorn
 boto3 # AWS for S3
 psutil
