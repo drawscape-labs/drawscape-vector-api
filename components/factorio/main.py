@@ -91,24 +91,11 @@ async def render_factorial(id):
             'layers': layers
         }
 
-        # start_time = time.time()
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
-        # file_size = response['ContentLength']
-        # file_size_mb = file_size / (1024 * 1024)
-        # print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
-        # print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
         
-        # start_time = time.time()
         json_data = json.loads(response['Body'].read().decode('utf-8'))
-        # print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
-        
-        # start_time = time.time()
         svg_content = createFactorio(json_data, themeSettings)
         del json_data
-        # print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
-
-        # svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
-        # print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
 
         return jsonify(svg_content), 200
     except s3.exceptions.NoSuchKey:
@@ -176,7 +163,6 @@ def upload_svg_to_s3(svg, folder_id):
         return True
     else:
         return False    
-
 
 
 
