@@ -6,9 +6,6 @@ import boto3
 import uuid
 import time
 import psutil
-#import subprocess
-# import gc
-# import tracemalloc
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -85,9 +82,18 @@ async def render_factorial(id):
         layers_string = request.args.get('layers', '')
         layers = layers_string.split(',') if layers_string else []
 
+        colors = {}
+        color_keys = ['background', 'assets', 'rails', 'belts', 'electrical', 'walls', 'pipes', 'spaceship']
+        for key in color_keys:
+            param_key = f'c_{key}'
+            if request.args.get(param_key):
+                colors[key] = request.args.get(param_key)
+
+
         themeSettings = {
-            'theme': request.args.get('theme_name',),
-            'color': request.args.get('color_scheme'),
+            'theme': request.args.get('theme_name'),
+            'color_scheme': request.args.get('color_scheme'),
+            'colors': colors,
             'layers': layers
         }
 
