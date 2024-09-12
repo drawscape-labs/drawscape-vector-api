@@ -6,6 +6,7 @@ import boto3
 import uuid
 import time
 import psutil
+import random
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -68,16 +69,23 @@ async def create_factorio():
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
            
     # For now, just return the parsed JSON data
-    print(f"Uploaded to S3: {folder_id}")
     return folder_id
 
 @factorio.route('/factorio/render-project/<id>', methods=['GET'])
 async def render_factorial(id):
 
     print(f"\n\n\n API: Rendering project: {id}")
+    # Print the request arguments
+    print("API: Request arguments:")
+    for key, value in request.args.items():
+        print(f"  {key}: {value}")
+    print("\n")
 
     file_name = f"{id}.json"    
     try:
+        response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
+        json_data = json.loads(response['Body'].read().decode('utf-8'))
+        entity_count = len(json_data['entities'])
         
         layers_string = request.args.get('layers', '')
         layers = layers_string.split(',') if layers_string else []
@@ -89,17 +97,32 @@ async def render_factorial(id):
             if request.args.get(param_key):
                 colors[key] = request.args.get(param_key)
 
+        # Determine theme based on entity count if not provided in request args
+        if not request.args.get('theme_name'):
+            if entity_count > 20000:
+                theme_name = 'squares'
+            else:
+                theme_name = 'squares_highres'
+        else:
+            theme_name = request.args.get('theme_name')
+
+        # If no color_scheme is provided in the request args, choose one randomly
+        if not request.args.get('color_scheme'):
+            themes = listThemes()
+            selected_theme = next((t for t in themes if t['slug'] == theme_name), None)
+            color_schemes = selected_theme.get('colors', {})
+            color_scheme = random.choice(list(color_schemes.keys()))            
+        else:
+            color_scheme = request.args.get('color_scheme')
 
         themeSettings = {
-            'theme': request.args.get('theme_name'),
-            'color_scheme': request.args.get('color_scheme'),
+            'theme': theme_name,
+            'color_scheme': color_scheme,
             'colors': colors,
             'layers': layers
         }
 
-        response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
-        
-        json_data = json.loads(response['Body'].read().decode('utf-8'))
+        print(f"API: Theme settings: {themeSettings}")
         svg_content = createFactorio(json_data, themeSettings)
         del json_data
 
@@ -175,8 +198,6 @@ def upload_svg_to_s3(svg, folder_id):
 @factorio.route('/factorio/render-test/<id>', methods=['GET'])
 async def render_test(id):
 
-    print(f"\n\n\n API: Rendering test")
-    print(f"virtual_memory:  {(psutil.virtual_memory().total - psutil.virtual_memory().available) / (1024 * 1024):.2f} MB")
 
     file_name = f"{id}.json"    
     try:
@@ -190,20 +211,15 @@ async def render_test(id):
         response = s3.get_object(Bucket=BUCKET_NAME, Key=file_name)
         file_size = response['ContentLength']
         file_size_mb = file_size / (1024 * 1024)
-        print(f"API: Size of file coming from S3: {file_size_mb:.2f} MB")
-        print(f"API: Time to get object from S3: {time.time() - start_time} seconds")
         
         start_time = time.time()
         json_data = json.loads(response['Body'].read().decode('utf-8'))
-        print(f"API: Time to load JSON data: {time.time() - start_time} seconds")
         
         start_time = time.time()
         svg_content = createFactorio(json_data, themeSettings)
         del json_data
-        print(f"API: Time to create SVG content: {time.time() - start_time} seconds")
 
         svg_size_mb = len(svg_content['svg_string'].encode('utf-8')) / (1024 * 1024)
-        print(f"API: Size of SVG content: {svg_size_mb:.2f} MB")
 
 
         return jsonify(svg_content), 200
