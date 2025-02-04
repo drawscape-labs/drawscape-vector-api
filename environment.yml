@@ -15,3 +15,5 @@ dependencies:
   - psutil
   - pip:
     - flask[async]
+    - Hershey-Fonts
+    - https://software-download.bantamtools.com/nd/api/nextdraw_api.zip#egg=nextdraw-api

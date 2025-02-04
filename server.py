@@ -2,11 +2,13 @@ from flask      import Flask, jsonify
 from flask_cors import CORS
 
 from components.factorio.main import factorio
+from components.blueprints.main import blueprint_bp
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.register_blueprint(factorio)
+app.register_blueprint(blueprint_bp)
 
 @app.route('/')
 def index():

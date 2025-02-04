@@ -9,6 +9,7 @@ conda activate drawscape_api
 ```
 
 Launch Server
+This cannot run inside the Cursor termianl for some reason, need to use the normal terminal. 
 ```
 conda activate drawscape_api
 python server.py

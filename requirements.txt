@@ -8,3 +8,5 @@ drawscape-factorio==0.15.22
 gunicorn
 boto3 # AWS for S3
 psutil
+Hershey-Fonts
+https://software-download.bantamtools.com/nd/api/nextdraw_api.zip#egg=nextdraw-api
