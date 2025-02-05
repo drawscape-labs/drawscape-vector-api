@@ -160,6 +160,7 @@ def container(json_data, svg_file_path):
 def generate_label():
     data = request.get_json()
 
+
     if not data:
         return jsonify({
             'status': 'error',
@@ -180,6 +181,8 @@ def generate_label():
             'message': f"Missing field(s): {', '.join(missing_fields)}"
         }), 400
 
+    
+
     # Download the SVG file from the provided S3 URL
     try:
         response = requests.get(svg_url)
@@ -196,6 +199,8 @@ def generate_label():
     # Update the data to include the project name as title
     data['title'] = project_name
     data.setdefault('subtitle', '')
+
+
 
     # Generate the SVG content using the container function
     svg_content = container(data, temp_svg_path)
