@@ -207,7 +207,7 @@ class SVGBuilder:
             svg_builder.end_group()
         """
         attrs = attrs or {}
-        element = f'<title{self._format_attrs(attrs)}>{content}</title>'
+        element = f'<title>{content}</title>'
         return self._add_element(element)
     
     def text(self, x: float, y: float, content: str, attrs: dict = None) -> 'SVGBuilder':
@@ -364,6 +364,7 @@ class SVGBuilder:
             
         # Calculate the bounding box
         bbox = self.get_hershey_text_bounding_box(content)
+        print(f"bbox: {bbox}")
         
         # Set default styles for the bounding box
         default_bbox_attrs = {
