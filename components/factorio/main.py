@@ -32,6 +32,16 @@ factorio = Blueprint('factorio', __name__)
 
 @factorio.route('/factorio/upload-fue5', methods=['POST'])
 async def create_factorio():
+    """
+    Endpoint for uploading and processing a Factorio User Exchange (FUE5) JSON file.
+    
+    Accepts:
+        - file: A JSON file containing Factorio blueprint data
+    
+    Returns:
+        - On success: A string containing the UUID of the created project
+        - On failure: JSON object with an "error" key describing the issue (400 or 500 status code)
+    """
 
     if 'file' not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
@@ -73,6 +83,27 @@ async def create_factorio():
 
 @factorio.route('/factorio/render-project/<id>', methods=['GET'])
 async def render_factorial(id):
+    """
+    Endpoint for rendering a Factorio project as SVG.
+    
+    Path Parameters:
+        - id: UUID of the project to render
+    
+    Query Parameters:
+        - layers: Comma-separated list of layers to include
+        - c_[component]: Color settings for specific components
+        - theme_name: Name of the theme to use
+        - color_scheme: Name of the color scheme within the theme
+    
+    Returns:
+        - On success: JSON object containing SVG content with the following structure:
+            {
+                "svg_string": String containing the SVG markup,
+                "width": Width of the SVG in pixels,
+                "height": Height of the SVG in pixels
+            }
+        - On failure: JSON object with an "error" key describing the issue (404 or 500 status code)
+    """
 
     print(f"\n\n\n API: Rendering project: {id}")
     # Print the request arguments
@@ -134,12 +165,53 @@ async def render_factorial(id):
 
 @factorio.route('/factorio/available-themes', methods=['GET'])
 async def available_themes():
+    """
+    Endpoint for retrieving available rendering themes.
+    
+    Returns:
+        JSON object with a "themes" key containing an array of theme objects with the following structure:
+        {
+            "themes": [
+                {
+                    "name": Human-readable theme name,
+                    "slug": Theme identifier,
+                    "colors": {
+                        "color_scheme_name": {
+                            "component": "color_value",
+                            ...
+                        },
+                        ...
+                    }
+                },
+                ...
+            ]
+        }
+    """
     themes = listThemes()
     return jsonify({"themes": themes}), 200
 
 
 @factorio.route('/factorio/available-colors', methods=['GET'])
 async def available_colors():
+    """
+    Endpoint for retrieving available color schemes for a specific theme.
+    
+    Query Parameters:
+        - theme: Theme slug/identifier
+    
+    Returns:
+        JSON object with a "colors" key containing an object of color schemes:
+        {
+            "colors": {
+                "color_scheme_name": {
+                    "component": "color_value",
+                    ...
+                },
+                ...
+            }
+        }
+        The object will be empty if the specified theme doesn't exist.
+    """
     theme = request.args.get('theme')
     themes = listThemes()
 
@@ -197,7 +269,21 @@ def upload_svg_to_s3(svg, folder_id):
 
 @factorio.route('/factorio/render-test/<id>', methods=['GET'])
 async def render_test(id):
-
+    """
+    Test endpoint for rendering a Factorio project with predefined settings.
+    
+    Path Parameters:
+        - id: UUID of the project to render
+    
+    Returns:
+        - On success: JSON object containing SVG content with the following structure:
+            {
+                "svg_string": String containing the SVG markup,
+                "width": Width of the SVG in pixels,
+                "height": Height of the SVG in pixels
+            }
+        - On failure: JSON object with an "error" key describing the issue (404 or 500 status code)
+    """
 
     file_name = f"{id}.json"    
     try:

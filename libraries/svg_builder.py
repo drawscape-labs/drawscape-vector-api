@@ -1,3 +1,5 @@
+import re
+
 class SVGBuilder:
     """
     A utility class for programmatically creating SVG elements
@@ -364,7 +366,6 @@ class SVGBuilder:
             
         # Calculate the bounding box
         bbox = self.get_hershey_text_bounding_box(content)
-        print(f"bbox: {bbox}")
         
         # Set default styles for the bounding box
         default_bbox_attrs = {
@@ -558,6 +559,656 @@ class SVGBuilder:
         else:
             self.current_group = None
         
+        return self
+    
+    def calculate_bounding_box(self, svg_content: str) -> dict:
+        """
+        Calculates the bounding box of an SVG by analyzing its elements.
+        Ignores the viewBox, width, and height attributes of the SVG.
+        
+        Args:
+            svg_content: Raw SVG content as a string
+            
+        Returns:
+            dict: A dictionary containing the bounding box information:
+                - 'min_x': Minimum x-coordinate
+                - 'max_x': Maximum x-coordinate
+                - 'min_y': Minimum y-coordinate
+                - 'max_y': Maximum y-coordinate
+                - 'width': Width of the bounding box
+                - 'height': Height of the bounding box
+        """
+        print("\n=== Starting calculate_bounding_box ===")
+        
+        # Initialize bounding box values
+        min_x = float('inf')
+        max_x = float('-inf')
+        min_y = float('inf')
+        max_y = float('-inf')
+        
+        # Remove XML declaration if present
+        svg_content = re.sub(r'<\?xml[^>]*\?>', '', svg_content)
+        
+        # Extract the SVG tag and its attributes
+        svg_match = re.search(r'<svg([^>]*)>(.*)</svg>', svg_content, re.DOTALL)
+        if not svg_match:
+            print("Warning: No valid SVG content found")
+            return {
+                'min_x': 0, 'max_x': 0, 'min_y': 0, 'max_y': 0,
+                'width': 0, 'height': 0
+            }
+
+        svg_attrs_str = svg_match.group(1)
+        inner_content = svg_match.group(2)
+        
+        # Extract width, height, and viewBox using regex
+        width_match = re.search(r'width="([^"]+)"', svg_attrs_str)
+        height_match = re.search(r'height="([^"]+)"', svg_attrs_str)
+        viewbox_match = re.search(r'viewBox="([^"]+)"', svg_attrs_str)
+        
+        width = width_match.group(1) if width_match else "Not specified"
+        height = height_match.group(1) if height_match else "Not specified"
+        viewbox = viewbox_match.group(1) if viewbox_match else "Not specified"
+        
+        # print(f"Extracted SVG Attributes:")
+        # print(f"  Width: {width}")
+        # print(f"  Height: {height}")
+        # print(f"  ViewBox: {viewbox}")
+        
+        # Helper function to update bounding box
+        def update_bbox(x, y):
+            nonlocal min_x, max_x, min_y, max_y
+            if x is not None:
+                min_x = min(min_x, float(x))
+                max_x = max(max_x, float(x))
+            if y is not None:
+                min_y = min(min_y, float(y))
+                max_y = max(max_y, float(y))
+        
+        # Helper to parse numeric attributes, stripping units
+        def parse_float(value):
+            if value is None:
+                return None
+            try:
+                # Strip units like px, mm, etc.
+                value = re.sub(r'[a-z%]+$', '', str(value))
+                return float(value)
+            except (ValueError, TypeError):
+                print(f"Warning: Could not parse value '{value}' as float")
+                return None
+                
+        # Helper to parse points for polyline and polygon
+        def parse_points(points_str):
+            if not points_str:
+                return []
+                
+            # Clean up the points string
+            points_str = points_str.strip()
+            # Replace commas with spaces for consistent splitting
+            points_str = re.sub(r',', ' ', points_str)
+            # Normalize whitespace
+            points_str = re.sub(r'\s+', ' ', points_str)
+            
+            # Split into individual coordinates
+            coordinates = points_str.split()
+            points = []
+            
+            # Group coordinates into pairs
+            for i in range(0, len(coordinates), 2):
+                if i + 1 < len(coordinates):
+                    try:
+                        x = parse_float(coordinates[i])
+                        y = parse_float(coordinates[i + 1])
+                        if x is not None and y is not None:
+                            points.append((x, y))
+                    except (ValueError, IndexError):
+                        print(f"Warning: Could not parse point coordinates: {coordinates[i:i+2]}")
+                        
+            return points
+        
+        # Process SVG content using regex for each type of element
+        # This approach avoids namespace issues with XML parsing
+        
+        # Process rect elements
+        rect_pattern = r'<rect\s+([^>]*)/?>'
+        for match in re.finditer(rect_pattern, inner_content):
+            attrs = match.group(1)
+            print(f"\nFound rect: {attrs}")
+            
+            # Extract attributes
+            x = parse_float(re.search(r'x="([^"]*)"', attrs).group(1) if re.search(r'x="([^"]*)"', attrs) else 0)
+            y = parse_float(re.search(r'y="([^"]*)"', attrs).group(1) if re.search(r'y="([^"]*)"', attrs) else 0)
+            width = parse_float(re.search(r'width="([^"]*)"', attrs).group(1) if re.search(r'width="([^"]*)"', attrs) else 0)
+            height = parse_float(re.search(r'height="([^"]*)"', attrs).group(1) if re.search(r'height="([^"]*)"', attrs) else 0)
+            
+            # print(f"  Rect: x={x}, y={y}, width={width}, height={height}")
+            
+            if width is not None and height is not None:
+                update_bbox(x, y)
+                update_bbox(x + width, y + height)
+        
+        # Process circle elements
+        circle_pattern = r'<circle\s+([^>]*)/?>'
+        for match in re.finditer(circle_pattern, inner_content):
+            attrs = match.group(1)
+            # print(f"\nFound circle: {attrs}")
+            
+            # Extract attributes
+            cx = parse_float(re.search(r'cx="([^"]*)"', attrs).group(1) if re.search(r'cx="([^"]*)"', attrs) else 0)
+            cy = parse_float(re.search(r'cy="([^"]*)"', attrs).group(1) if re.search(r'cy="([^"]*)"', attrs) else 0)
+            r = parse_float(re.search(r'r="([^"]*)"', attrs).group(1) if re.search(r'r="([^"]*)"', attrs) else 0)
+            
+            print(f"  Circle: cx={cx}, cy={cy}, r={r}")
+            
+            if cx is not None and cy is not None and r is not None:
+                update_bbox(cx - r, cy - r)
+                update_bbox(cx + r, cy + r)
+        
+        # Process ellipse elements
+        ellipse_pattern = r'<ellipse\s+([^>]*)/?>'
+        for match in re.finditer(ellipse_pattern, inner_content):
+            attrs = match.group(1)
+            print(f"\nFound ellipse: {attrs}")
+            
+            # Extract attributes
+            cx = parse_float(re.search(r'cx="([^"]*)"', attrs).group(1) if re.search(r'cx="([^"]*)"', attrs) else 0)
+            cy = parse_float(re.search(r'cy="([^"]*)"', attrs).group(1) if re.search(r'cy="([^"]*)"', attrs) else 0)
+            rx = parse_float(re.search(r'rx="([^"]*)"', attrs).group(1) if re.search(r'rx="([^"]*)"', attrs) else 0)
+            ry = parse_float(re.search(r'ry="([^"]*)"', attrs).group(1) if re.search(r'ry="([^"]*)"', attrs) else 0)
+            
+            print(f"  Ellipse: cx={cx}, cy={cy}, rx={rx}, ry={ry}")
+            
+            if cx is not None and cy is not None and rx is not None and ry is not None:
+                update_bbox(cx - rx, cy - ry)
+                update_bbox(cx + rx, cy + ry)
+        
+        # Process line elements
+        line_pattern = r'<line\s+([^>]*)/?>'
+        for match in re.finditer(line_pattern, inner_content):
+            attrs = match.group(1)
+            # print(f"\nFound line: {attrs}")
+            
+            # Extract attributes
+            x1 = parse_float(re.search(r'x1="([^"]*)"', attrs).group(1) if re.search(r'x1="([^"]*)"', attrs) else 0)
+            y1 = parse_float(re.search(r'y1="([^"]*)"', attrs).group(1) if re.search(r'y1="([^"]*)"', attrs) else 0)
+            x2 = parse_float(re.search(r'x2="([^"]*)"', attrs).group(1) if re.search(r'x2="([^"]*)"', attrs) else 0)
+            y2 = parse_float(re.search(r'y2="([^"]*)"', attrs).group(1) if re.search(r'y2="([^"]*)"', attrs) else 0)
+            
+            # print(f"  Line: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+            
+            update_bbox(x1, y1)
+            update_bbox(x2, y2)
+            
+        # Process polyline elements
+        polyline_pattern = r'<polyline\s+([^>]*)/?>'
+        for match in re.finditer(polyline_pattern, inner_content):
+            attrs = match.group(1)
+            # print(f"\nFound polyline: {attrs}")
+            
+            # Extract points attribute
+            points_match = re.search(r'points="([^"]*)"', attrs)
+            if points_match:
+                points_str = points_match.group(1)
+                # print(f"  Polyline points: {points_str}")
+                
+                points = parse_points(points_str)
+                for x, y in points:
+                    update_bbox(x, y)
+        
+        # Process polygon elements
+        polygon_pattern = r'<polygon\s+([^>]*)/?>'
+        for match in re.finditer(polygon_pattern, inner_content):
+            attrs = match.group(1)
+            # print(f"\nFound polygon: {attrs}")
+            
+            # Extract points attribute
+            points_match = re.search(r'points="([^"]*)"', attrs)
+            if points_match:
+                points_str = points_match.group(1)
+                # print(f"  Polygon points: {points_str}")
+                
+                points = parse_points(points_str)
+                for x, y in points:
+                    update_bbox(x, y)
+
+        # Process text elements
+        text_pattern = r'<text\s+([^>]*)>([^<]*)</text>'
+        for match in re.finditer(text_pattern, inner_content):
+            attrs = match.group(1)
+            text_content = match.group(2)
+            print(f"\nFound text: {attrs} - Content: {text_content}")
+            
+            # Extract attributes
+            x = parse_float(re.search(r'x="([^"]*)"', attrs).group(1) if re.search(r'x="([^"]*)"', attrs) else 0)
+            y = parse_float(re.search(r'y="([^"]*)"', attrs).group(1) if re.search(r'y="([^"]*)"', attrs) else 0)
+            
+            print(f"  Text: x={x}, y={y}, content='{text_content}'")
+            
+            # Simple text bounding box approximation
+            update_bbox(x, y)
+            # Rough estimate of text width based on content length
+            if text_content:
+                approx_width = len(text_content) * 8  # Very rough approximation
+                update_bbox(x + approx_width, y + 10)  # Assuming ~10px height
+
+        # Process path elements
+        path_pattern = r'<path\s+([^>]*)/?>'
+        for match in re.finditer(path_pattern, inner_content):
+            attrs = match.group(1)
+            # print(f"\nFound path: {attrs}")
+            
+            # Extract path data
+            d_match = re.search(r'd="([^"]*)"', attrs)
+            if d_match:
+                d = d_match.group(1)
+                print(f"  Path data: {d}")
+                
+                try:
+                    # Simplified path parsing
+                    # Normalize spaces around commands and commas
+                    d = re.sub(r'([MLHVZCSTQAmlhvzcstqa])', r' \1 ', d)
+                    d = re.sub(r',', ' ', d)
+                    d = re.sub(r'\s+', ' ', d).strip()
+                    
+                    tokens = d.split()
+                    cmd = None
+                    x = 0
+                    y = 0
+                    
+                    if len(tokens) == 0:
+                        print("    Warning: Empty path data")
+                        continue
+                        
+                    # If first token isn't a command, assume an implicit 'M' command
+                    if tokens[0] not in 'MLHVZCSTQAmlhvzcstqa':
+                        print(f"    Warning: Path data doesn't start with a command. Assuming 'M' command. First token: {tokens[0]}")
+                        cmd = 'M'
+                    
+                    i = 0
+                    while i < len(tokens):
+                        # Safety check for index out of bounds
+                        if i >= len(tokens):
+                            print("    Warning: Index out of bounds in path data processing")
+                            break
+                            
+                        token = tokens[i]
+                        
+                        # Check if token is a command
+                        if token in 'MLHVZCSTQAmlhvzcstqa':
+                            cmd = token
+                            i += 1
+                            continue
+                        
+                        # Process based on current command
+                        try:
+                            if cmd is not None and cmd in 'Mm' and i + 1 < len(tokens):
+                                # moveto: M x y or m dx dy
+                                x_val = parse_float(tokens[i])
+                                y_val = parse_float(tokens[i + 1])
+                                
+                                if x_val is not None and y_val is not None:
+                                    if cmd == 'm':  # relative
+                                        x += x_val
+                                        y += y_val
+                                    else:  # absolute
+                                        x = x_val
+                                        y = y_val
+                                    
+                                    update_bbox(x, y)
+                                    print(f"    Moveto: x={x}, y={y}")
+                                i += 2
+                                
+                            elif cmd is not None and cmd in 'Ll' and i + 1 < len(tokens):
+                                # lineto: L x y or l dx dy
+                                x_val = parse_float(tokens[i])
+                                y_val = parse_float(tokens[i + 1])
+                                
+                                if x_val is not None and y_val is not None:
+                                    if cmd == 'l':  # relative
+                                        x += x_val
+                                        y += y_val
+                                    else:  # absolute
+                                        x = x_val
+                                        y = y_val
+                                    
+                                    update_bbox(x, y)
+                                    print(f"    Lineto: x={x}, y={y}")
+                                i += 2
+                                
+                            elif cmd is not None and cmd in 'Hh':
+                                # horizontal lineto: H x or h dx
+                                x_val = parse_float(tokens[i])
+                                
+                                if x_val is not None:
+                                    if cmd == 'h':  # relative
+                                        x += x_val
+                                    else:  # absolute
+                                        x = x_val
+                                    
+                                    update_bbox(x, y)
+                                    print(f"    H-Lineto: x={x}, y={y}")
+                                i += 1
+                                
+                            elif cmd is not None and cmd in 'Vv':
+                                # vertical lineto: V y or v dy
+                                y_val = parse_float(tokens[i])
+                                
+                                if y_val is not None:
+                                    if cmd == 'v':  # relative
+                                        y += y_val
+                                    else:  # absolute
+                                        y = y_val
+                                    
+                                    update_bbox(x, y)
+                                    print(f"    V-Lineto: x={x}, y={y}")
+                                i += 1
+                                
+                            elif cmd is not None and cmd in 'Cc' and i + 5 < len(tokens):
+                                # curveto: C x1 y1 x2 y2 x y or c dx1 dy1 dx2 dy2 dx dy
+                                # Only store the final point for bbox
+                                # Control points could extend outside the path
+                                x1 = parse_float(tokens[i])
+                                y1 = parse_float(tokens[i + 1])
+                                x2 = parse_float(tokens[i + 2])
+                                y2 = parse_float(tokens[i + 3])
+                                x_val = parse_float(tokens[i + 4])
+                                y_val = parse_float(tokens[i + 5])
+                                
+                                if cmd == 'c':  # relative
+                                    # Include control points in bounding box
+                                    update_bbox(x + x1, y + y1)
+                                    update_bbox(x + x2, y + y2)
+                                    x += x_val
+                                    y += y_val
+                                else:  # absolute
+                                    # Include control points in bounding box
+                                    update_bbox(x1, y1)
+                                    update_bbox(x2, y2)
+                                    x = x_val
+                                    y = y_val
+                                    
+                                update_bbox(x, y)
+                                i += 6
+                                
+                            elif cmd is not None and cmd in 'Ss' and i + 3 < len(tokens):
+                                # shorthand/smooth curveto: S x2 y2 x y or s dx2 dy2 dx dy
+                                x2 = parse_float(tokens[i])
+                                y2 = parse_float(tokens[i + 1])
+                                x_val = parse_float(tokens[i + 2])
+                                y_val = parse_float(tokens[i + 3])
+                                
+                                if cmd == 's':  # relative
+                                    update_bbox(x + x2, y + y2)
+                                    x += x_val
+                                    y += y_val
+                                else:  # absolute
+                                    update_bbox(x2, y2)
+                                    x = x_val
+                                    y = y_val
+                                    
+                                update_bbox(x, y)
+                                i += 4
+                                
+                            elif cmd is not None and cmd in 'Qq' and i + 3 < len(tokens):
+                                # quadratic curveto: Q x1 y1 x y or q dx1 dy1 dx dy
+                                x1 = parse_float(tokens[i])
+                                y1 = parse_float(tokens[i + 1])
+                                x_val = parse_float(tokens[i + 2])
+                                y_val = parse_float(tokens[i + 3])
+                                
+                                if cmd == 'q':  # relative
+                                    update_bbox(x + x1, y + y1)
+                                    x += x_val
+                                    y += y_val
+                                else:  # absolute
+                                    update_bbox(x1, y1)
+                                    x = x_val
+                                    y = y_val
+                                    
+                                update_bbox(x, y)
+                                i += 4
+                                
+                            elif cmd is not None and cmd in 'Tt' and i + 1 < len(tokens):
+                                # shorthand/smooth quadratic curveto: T x y or t dx dy
+                                x_val = parse_float(tokens[i])
+                                y_val = parse_float(tokens[i + 1])
+                                
+                                if cmd == 't':  # relative
+                                    x += x_val
+                                    y += y_val
+                                else:  # absolute
+                                    x = x_val
+                                    y = y_val
+                                    
+                                update_bbox(x, y)
+                                i += 2
+                                
+                            elif cmd is not None and cmd in 'Aa' and i + 6 < len(tokens):
+                                # elliptical arc: A rx ry x-axis-rotation large-arc-flag sweep-flag x y
+                                # or a rx ry x-axis-rotation large-arc-flag sweep-flag dx dy
+                                rx = parse_float(tokens[i])
+                                ry = parse_float(tokens[i + 1])
+                                # Skip rotation and flags
+                                x_val = parse_float(tokens[i + 5])
+                                y_val = parse_float(tokens[i + 6])
+                                
+                                if cmd == 'a':  # relative
+                                    x += x_val
+                                    y += y_val
+                                else:  # absolute
+                                    x = x_val
+                                    y = y_val
+                                    
+                                update_bbox(x, y)
+                                i += 7
+                                
+                            elif cmd is not None and cmd in 'Zz':
+                                # closepath - no coordinates
+                                i += 1
+                                
+                            else:
+                                # Skip unknown commands or formats
+                                if cmd is None:
+                                    print(f"    Warning: Encountered None command at position {i} in path data. Skipping token '{tokens[i]}' if available.")
+                                else:
+                                    print(f"    Warning: Skipping unknown command '{cmd}' at position {i}")
+                                i += 1
+                        except (IndexError, ValueError) as e:
+                            print(f"    Error processing command '{cmd}' at position {i}: {e}")
+                            i += 1
+                except Exception as e:
+                    print(f"    Error in overall path parsing: {e}")
+
+        # print("\nCurrent bounding box values:")
+        # print(f"  min_x: {min_x}")
+        # print(f"  max_x: {max_x}")
+        # print(f"  min_y: {min_y}")
+        # print(f"  max_y: {max_y}")
+        
+        # Handle cases where no elements were found or parsed
+        if min_x == float('inf') or max_x == float('-inf') or min_y == float('inf') or max_y == float('-inf'):
+            print("Warning: No valid elements found or bounding box calculation failed")
+            
+            # If viewBox is specified, use it as fallback
+            if viewbox_match:
+                try:
+                    viewbox_parts = viewbox.split()
+                    if len(viewbox_parts) == 4:
+                        print("Using viewBox as fallback for bounding box")
+                        min_x = float(viewbox_parts[0])
+                        min_y = float(viewbox_parts[1])
+                        width_val = float(viewbox_parts[2])
+                        height_val = float(viewbox_parts[3])
+                        max_x = min_x + width_val
+                        max_y = min_y + height_val
+                    else:
+                        min_x = 0
+                        max_x = 0
+                        min_y = 0
+                        max_y = 0
+                except:
+                    min_x = 0
+                    max_x = 0
+                    min_y = 0
+                    max_y = 0
+            else:
+                min_x = 0
+                max_x = 0
+                min_y = 0
+                max_y = 0
+        
+        # Calculate width and height
+        width = max_x - min_x
+        height = max_y - min_y
+        
+        print(f"  width: {width}")
+        print(f"  height: {height}")
+        
+        print("=== Finished calculate_bounding_box ===\n")
+        
+        return {
+            'min_x': min_x,
+            'max_x': max_x,
+            'min_y': min_y,
+            'max_y': max_y,
+            'width': width,
+            'height': height
+        }
+
+    def extract_svg_contents(self, svg_content: str) -> tuple[str, str]:
+        """
+        Extracts and cleans up SVG content by removing unnecessary elements and attributes.
+        
+        This method:
+        1. Removes XML declaration
+        2. Removes metadata elements
+        3. Removes empty defs elements
+        4. Removes Inkscape-specific attributes
+        5. Extracts the inner content from the SVG tag
+        
+        Args:
+            svg_content: Raw SVG content as a string
+            
+        Returns:
+            tuple[str, str]: A tuple containing:
+                - The SVG attributes string
+                - The cleaned inner content string
+                
+        Example:
+            svg_attrs, inner_content = svg_builder.extract_svg_contents(raw_svg)
+        """
+        print("\n=== Starting extract_svg_contents ===")
+        
+        # Remove XML declaration if present
+        svg_content = re.sub(r'<\?xml[^>]*\?>', '', svg_content)
+        
+        # Extract the SVG tag and its attributes
+        svg_match = re.search(r'<svg([^>]*)>(.*)</svg>', svg_content, re.DOTALL)
+        if not svg_match:
+            print("Warning: No valid SVG content found")
+            return "", ""
+            
+        svg_attrs = svg_match.group(1)
+        inner_content = svg_match.group(2)
+        
+        # Remove metadata elements
+        inner_content = re.sub(r'<metadata[^>]*>.*?</metadata>', '', inner_content, flags=re.DOTALL)
+        
+        # Remove empty <defs/> elements
+        inner_content = re.sub(r'<defs\s*/>', '', inner_content, flags=re.DOTALL)
+        
+        # Remove Inkscape-specific attributes from all elements
+        inner_content = re.sub(r'\sinkscape:[^=]+="[^"]*"', '', inner_content)
+        
+        print("SVG content cleaned up successfully")
+        print(f"Found SVG tag with attributes: {svg_attrs}")
+        
+        return svg_attrs, inner_content
+
+    def add_schematic(self, svg_content: str, attrs: dict = None) -> 'SVGBuilder':
+        """
+        Adds a schematic SVG to the canvas, scaling it to fit within the parent SVG's dimensions
+        
+        This method takes a raw SVG string, extracts its elements, and scales them to fit
+        within the current SVG canvas while maintaining aspect ratio and centering the content.
+        
+        Args:
+            svg_content: Raw SVG content as a string
+            attrs: Optional additional attributes to apply to the schematic group
+            
+        Returns:
+            The builder instance for method chaining
+        """
+        print("\n=== Starting add_schematic ===")
+        print(f"Parent SVG dimensions: {self.width}mm x {self.height}mm")
+        
+        # Extract and clean up SVG contents
+        svg_attrs, inner_content = self.extract_svg_contents(svg_content)
+        
+        # Calculate the actual bounding box of the SVG content
+        bbox = self.calculate_bounding_box(svg_content)
+        # print("Calculated bounding box from SVG elements:")
+        # print(f"  min_x: {bbox['min_x']}")
+        # print(f"  max_x: {bbox['max_x']}")
+        # print(f"  min_y: {bbox['min_y']}")
+        # print(f"  max_y: {bbox['max_y']}")
+        # print(f"  width: {bbox['width']}")
+        # print(f"  height: {bbox['height']}")
+        
+        # Calculate scaling to fit within our viewport
+        scale_x = self.width / bbox['width']
+        scale_y = self.height / bbox['height']
+        scale = min(scale_x, scale_y) * 0.8  # Use 90% of available space
+        
+        # Calculate translation to center the content
+        # First we need to account for the original bounding box offset
+        # Then calculate centering in the target viewport
+        translate_x = (self.width - (bbox['width'] * scale)) / 2 - (bbox['min_x'] * scale)
+        translate_y = (self.height - (bbox['height'] * scale)) / 2 - (bbox['min_y'] * scale)
+        
+        # print(f"Transform calculations:")
+        # print(f"  scale_x: {scale_x}")
+        # print(f"  scale_y: {scale_y}")
+        # print(f"  final scale: {scale}")
+        # print(f"  translate_x: {translate_x}")
+        # print(f"  translate_y: {translate_y}")
+        
+        # Create a group for the schematic with transform
+        # The order is: first scale, then translate (SVG transforms are applied right-to-left)
+        group_attrs = {
+            'transform': f'translate({translate_x},{translate_y}) scale({scale})'
+        }
+        print(f"Group transform: {group_attrs['transform']}")
+        
+        # Merge with any additional attributes
+        if attrs:
+            group_attrs.update(attrs)
+            print(f"Additional attributes added: {attrs}")
+            
+        # Add the schematic in a new group
+        print("Adding schematic to group...")
+        self.begin_group(group_attrs)
+        
+        # Draw the bounding box for testing
+        self.rect(
+            bbox['min_x'],
+            bbox['min_y'],
+            bbox['width'],
+            bbox['height'],
+            {
+                'fill': 'red',
+                'stroke': 'red',
+                'stroke-width': '0.5',
+                'stroke-dasharray': '2,2',
+                'opacity': '0.7'
+            }
+        )
+        
+        # Add the inner content directly without the containing SVG tag
+        self._add_element(inner_content)
+        self.end_group()
+        
+        print("=== Finished add_schematic ===\n")
         return self
     
     def to_string(self) -> str:

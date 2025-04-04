@@ -9,7 +9,7 @@ PAPER_SIZES = {
     'tabloid': (279.4, 431.8)
 }
 
-def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orientation='portrait', background_color="white", pen_color="black", legend=None):
+def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orientation='portrait', paper_color="white", pen_color="black", legend=None, schematic_svg=None):
     """
     Create a blueprint SVG with the correct paper size and border.
     
@@ -18,13 +18,15 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
         subtitle: Subtitle to display on the blueprint
         size: Paper size ('a3', 'a4', 'letter', 'tabloid')
         orientation: Paper orientation ('portrait' or 'landscape')
-        background_color: Background color for the blueprint
+        paper_color: Paper color for the blueprint
         pen_color: Pen color for the blueprint
         legend: List of legend items with label and content
+        schematic_svg: SVG string to include in the blueprint
         
     Returns:
         SVGBuilder instance with the document and border set up
     """
+
     # Default to tabloid size if no size specified or if specified size is invalid
     if not size or size not in PAPER_SIZES:
         print(f"Cannot find the specified paper size '{size}'. Defaulting to tabloid size.")
@@ -63,10 +65,16 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
     # Create SVG builder with document dimensions
     svg = SVGBuilder(DOCUMENT_WIDTH, DOCUMENT_HEIGHT, {'stroke': pen_color, 'stroke-width': '0.5'})
         
+    svg.begin_group({'id': 'background'})
+    svg.title("background")
     # Add background rectangle
-    svg.rect(0, 0, DOCUMENT_WIDTH, DOCUMENT_HEIGHT, {'fill': background_color, 'stroke': 'none'})
+    svg.rect(0, 0, DOCUMENT_WIDTH, DOCUMENT_HEIGHT, {'fill': paper_color, 'stroke': 'none'})
+    svg.end_group()
     
     # Add outer border rectangle
+    svg.begin_group({'id': 'border'})
+    svg.title("border")
+        
     svg.rect(
         BORDER_INSET, 
         BORDER_INSET, 
@@ -74,7 +82,12 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
         BORDER_HEIGHT, 
         {'fill': 'none', 'stroke': pen_color, 'stroke-width': BORDER_STROKE_WIDTH}
     )
-    
+    svg.end_group()
+
+    # Add outer border rectangle
+    svg.begin_group({'id': 'titles'})
+    svg.title("titles")
+
     # Add title text using Hershey font
     title_box = svg.get_hershey_text_bounding_box(title)
     title_width = title_box['width']
@@ -104,8 +117,14 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
             'stroke-width': str(SUBTITLE_STROKE_WIDTH)
         })
 
+    svg.end_group()
+
     # Add legend if provided
     if legend:
+
+        svg.begin_group({'id': 'legend'})
+        svg.title("legend")
+
         # Calculate the width of the widest label and content
         max_label_width = 0
         max_content_width = 0
@@ -178,6 +197,23 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
                 LEGEND_TEXT_SCALE_FACTOR,
                 {'stroke': pen_color, 'stroke-width': str(TEXT_STROKE_WIDTH)}
             )
+        svg.end_group()
+
+    # Add schematic SVG if provided
+    if schematic_svg:
+        # Calculate the available space for the schematic
+        # Leave space for legend at the top and some padding
+
+        # Create a group for the schematic with proper positioning and scaling
+        svg.begin_group({ 'id': 'schematic'})
+        svg.title("schematic")
+        
+        # Add the schematic SVG content        
+        svg.calculate_bounding_box(schematic_svg)
+        
+        svg.add_schematic(schematic_svg)
+        
+        svg.end_group()
     
     return svg
 

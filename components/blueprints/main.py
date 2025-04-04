@@ -158,6 +158,27 @@ def container(json_data, svg_file_path):
 
 @blueprint_bp.route('/generate-label', methods=['POST'])
 def generate_label():
+    """
+    Endpoint for generating a label with project details for a blueprint.
+    
+    Accepts JSON data containing:
+        - project_name: Name of the project to display on the label
+        - svg_url: URL to an SVG file to analyze for drawing time and pen travel distance
+    
+    Returns:
+        JSON object with the following fields:
+            - status: 'success' or 'error'
+            - svg_string: SVG content string (on success)
+            - message: Error message (on error)
+        
+        The SVG content includes a legend with:
+            - Date
+            - Project name/title
+            - Drawing time estimate
+            - Pen travel distance
+            - Designer information
+            - Website information
+    """
     data = request.get_json()
 
 
