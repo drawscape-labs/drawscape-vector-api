@@ -53,7 +53,7 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
     TITLE_STROKE_WIDTH = 1
     SUBTITLE_SCALE_FACTOR = .3
     SUBTITLE_STROKE_WIDTH = 1
-    TITLE_SUBTITLE_SPACING = 5  # Space between title and subtitle
+    TITLE_SUBTITLE_SPACING = 4  # Space between title and subtitle
 
     # Constants for legend positioning
     LEGEND_CELL_HEIGHT = 8 if size in ['a3', 'tabloid'] else 6

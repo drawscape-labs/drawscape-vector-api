@@ -66,6 +66,7 @@ class SVGBuilder:
         """
         if self.hershey_font:
             self.hershey_font.load_default_font(font_name)
+            self.hershey_font.render_options['spacing'] = -1.0
         return self
     
     def get_hershey_text_bounding_box(self, text: str) -> dict:
@@ -294,47 +295,6 @@ class SVGBuilder:
         self.end_group()
         return self
     
-    def centered_hershey_text(self, x: float, y: float, content: str, scale: float = 1.0, attrs: dict = None) -> 'SVGBuilder':
-        """
-        Adds text using the currently set Hershey font, centered at the specified coordinates
-        
-        This method is similar to hershey_text but automatically centers the text
-        based on its bounding box.
-        
-        Args:
-            x: X-coordinate of the center position
-            y: Y-coordinate of the center position
-            content: The text content to display
-            scale: Scaling factor for the text (default: 1.0)
-            attrs: Optional attributes for styling (e.g., stroke, stroke-width)
-            
-        Returns:
-            The builder instance for method chaining
-            
-        Example:
-            # Add centered Hershey font text
-            svg_builder.centered_hershey_text(100, 100, "Centered Text", 0.8, {
-                'stroke': 'blue',
-                'stroke-width': '0.75'
-            })
-        """
-        if not self.hershey_font:
-            print("Warning: HersheyFonts not available. Text will not be rendered.")
-            return self
-            
-        # Calculate the bounding box
-        bbox = self.get_hershey_text_bounding_box(content)
-        
-        # Calculate the centered position
-        center_offset_x = (bbox['min_x'] + bbox['max_x']) / 2
-        center_offset_y = (bbox['min_y'] + bbox['max_y']) / 2
-        
-        # Adjust the position to center the text
-        centered_x = x - (center_offset_x * scale)
-        centered_y = y - (center_offset_y * scale)
-        
-        # Use the standard hershey_text method with the adjusted position
-        return self.hershey_text(centered_x, centered_y, content, scale, attrs)
     
     def hershey_text_with_bbox(self, x: float, y: float, content: str, scale: float = 1.0, 
                                text_attrs: dict = None, bbox_attrs: dict = None) -> 'SVGBuilder':
@@ -578,8 +538,6 @@ class SVGBuilder:
                 - 'width': Width of the bounding box
                 - 'height': Height of the bounding box
         """
-        print("\n=== Starting calculate_bounding_box ===")
-        
         # Initialize bounding box values
         min_x = float('inf')
         max_x = float('-inf')
@@ -592,7 +550,6 @@ class SVGBuilder:
         # Extract the SVG tag and its attributes
         svg_match = re.search(r'<svg([^>]*)>(.*)</svg>', svg_content, re.DOTALL)
         if not svg_match:
-            print("Warning: No valid SVG content found")
             return {
                 'min_x': 0, 'max_x': 0, 'min_y': 0, 'max_y': 0,
                 'width': 0, 'height': 0
@@ -609,11 +566,6 @@ class SVGBuilder:
         width = width_match.group(1) if width_match else "Not specified"
         height = height_match.group(1) if height_match else "Not specified"
         viewbox = viewbox_match.group(1) if viewbox_match else "Not specified"
-        
-        # print(f"Extracted SVG Attributes:")
-        # print(f"  Width: {width}")
-        # print(f"  Height: {height}")
-        # print(f"  ViewBox: {viewbox}")
         
         # Helper function to update bounding box
         def update_bbox(x, y):
@@ -634,7 +586,6 @@ class SVGBuilder:
                 value = re.sub(r'[a-z%]+$', '', str(value))
                 return float(value)
             except (ValueError, TypeError):
-                print(f"Warning: Could not parse value '{value}' as float")
                 return None
                 
         # Helper to parse points for polyline and polygon
@@ -662,7 +613,7 @@ class SVGBuilder:
                         if x is not None and y is not None:
                             points.append((x, y))
                     except (ValueError, IndexError):
-                        print(f"Warning: Could not parse point coordinates: {coordinates[i:i+2]}")
+                        pass
                         
             return points
         
@@ -673,15 +624,12 @@ class SVGBuilder:
         rect_pattern = r'<rect\s+([^>]*)/?>'
         for match in re.finditer(rect_pattern, inner_content):
             attrs = match.group(1)
-            print(f"\nFound rect: {attrs}")
             
             # Extract attributes
             x = parse_float(re.search(r'x="([^"]*)"', attrs).group(1) if re.search(r'x="([^"]*)"', attrs) else 0)
             y = parse_float(re.search(r'y="([^"]*)"', attrs).group(1) if re.search(r'y="([^"]*)"', attrs) else 0)
             width = parse_float(re.search(r'width="([^"]*)"', attrs).group(1) if re.search(r'width="([^"]*)"', attrs) else 0)
             height = parse_float(re.search(r'height="([^"]*)"', attrs).group(1) if re.search(r'height="([^"]*)"', attrs) else 0)
-            
-            # print(f"  Rect: x={x}, y={y}, width={width}, height={height}")
             
             if width is not None and height is not None:
                 update_bbox(x, y)
@@ -691,14 +639,11 @@ class SVGBuilder:
         circle_pattern = r'<circle\s+([^>]*)/?>'
         for match in re.finditer(circle_pattern, inner_content):
             attrs = match.group(1)
-            # print(f"\nFound circle: {attrs}")
             
             # Extract attributes
             cx = parse_float(re.search(r'cx="([^"]*)"', attrs).group(1) if re.search(r'cx="([^"]*)"', attrs) else 0)
             cy = parse_float(re.search(r'cy="([^"]*)"', attrs).group(1) if re.search(r'cy="([^"]*)"', attrs) else 0)
             r = parse_float(re.search(r'r="([^"]*)"', attrs).group(1) if re.search(r'r="([^"]*)"', attrs) else 0)
-            
-            print(f"  Circle: cx={cx}, cy={cy}, r={r}")
             
             if cx is not None and cy is not None and r is not None:
                 update_bbox(cx - r, cy - r)
@@ -708,15 +653,12 @@ class SVGBuilder:
         ellipse_pattern = r'<ellipse\s+([^>]*)/?>'
         for match in re.finditer(ellipse_pattern, inner_content):
             attrs = match.group(1)
-            print(f"\nFound ellipse: {attrs}")
             
             # Extract attributes
             cx = parse_float(re.search(r'cx="([^"]*)"', attrs).group(1) if re.search(r'cx="([^"]*)"', attrs) else 0)
             cy = parse_float(re.search(r'cy="([^"]*)"', attrs).group(1) if re.search(r'cy="([^"]*)"', attrs) else 0)
             rx = parse_float(re.search(r'rx="([^"]*)"', attrs).group(1) if re.search(r'rx="([^"]*)"', attrs) else 0)
             ry = parse_float(re.search(r'ry="([^"]*)"', attrs).group(1) if re.search(r'ry="([^"]*)"', attrs) else 0)
-            
-            print(f"  Ellipse: cx={cx}, cy={cy}, rx={rx}, ry={ry}")
             
             if cx is not None and cy is not None and rx is not None and ry is not None:
                 update_bbox(cx - rx, cy - ry)
@@ -726,15 +668,12 @@ class SVGBuilder:
         line_pattern = r'<line\s+([^>]*)/?>'
         for match in re.finditer(line_pattern, inner_content):
             attrs = match.group(1)
-            # print(f"\nFound line: {attrs}")
             
             # Extract attributes
             x1 = parse_float(re.search(r'x1="([^"]*)"', attrs).group(1) if re.search(r'x1="([^"]*)"', attrs) else 0)
             y1 = parse_float(re.search(r'y1="([^"]*)"', attrs).group(1) if re.search(r'y1="([^"]*)"', attrs) else 0)
             x2 = parse_float(re.search(r'x2="([^"]*)"', attrs).group(1) if re.search(r'x2="([^"]*)"', attrs) else 0)
             y2 = parse_float(re.search(r'y2="([^"]*)"', attrs).group(1) if re.search(r'y2="([^"]*)"', attrs) else 0)
-            
-            # print(f"  Line: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
             
             update_bbox(x1, y1)
             update_bbox(x2, y2)
@@ -743,14 +682,11 @@ class SVGBuilder:
         polyline_pattern = r'<polyline\s+([^>]*)/?>'
         for match in re.finditer(polyline_pattern, inner_content):
             attrs = match.group(1)
-            # print(f"\nFound polyline: {attrs}")
             
             # Extract points attribute
             points_match = re.search(r'points="([^"]*)"', attrs)
             if points_match:
                 points_str = points_match.group(1)
-                # print(f"  Polyline points: {points_str}")
-                
                 points = parse_points(points_str)
                 for x, y in points:
                     update_bbox(x, y)
@@ -759,14 +695,11 @@ class SVGBuilder:
         polygon_pattern = r'<polygon\s+([^>]*)/?>'
         for match in re.finditer(polygon_pattern, inner_content):
             attrs = match.group(1)
-            # print(f"\nFound polygon: {attrs}")
             
             # Extract points attribute
             points_match = re.search(r'points="([^"]*)"', attrs)
             if points_match:
                 points_str = points_match.group(1)
-                # print(f"  Polygon points: {points_str}")
-                
                 points = parse_points(points_str)
                 for x, y in points:
                     update_bbox(x, y)
@@ -776,13 +709,10 @@ class SVGBuilder:
         for match in re.finditer(text_pattern, inner_content):
             attrs = match.group(1)
             text_content = match.group(2)
-            print(f"\nFound text: {attrs} - Content: {text_content}")
             
             # Extract attributes
             x = parse_float(re.search(r'x="([^"]*)"', attrs).group(1) if re.search(r'x="([^"]*)"', attrs) else 0)
             y = parse_float(re.search(r'y="([^"]*)"', attrs).group(1) if re.search(r'y="([^"]*)"', attrs) else 0)
-            
-            print(f"  Text: x={x}, y={y}, content='{text_content}'")
             
             # Simple text bounding box approximation
             update_bbox(x, y)
@@ -795,13 +725,11 @@ class SVGBuilder:
         path_pattern = r'<path\s+([^>]*)/?>'
         for match in re.finditer(path_pattern, inner_content):
             attrs = match.group(1)
-            # print(f"\nFound path: {attrs}")
             
             # Extract path data
             d_match = re.search(r'd="([^"]*)"', attrs)
             if d_match:
                 d = d_match.group(1)
-                print(f"  Path data: {d}")
                 
                 try:
                     # Simplified path parsing
@@ -816,19 +744,16 @@ class SVGBuilder:
                     y = 0
                     
                     if len(tokens) == 0:
-                        print("    Warning: Empty path data")
                         continue
                         
                     # If first token isn't a command, assume an implicit 'M' command
                     if tokens[0] not in 'MLHVZCSTQAmlhvzcstqa':
-                        print(f"    Warning: Path data doesn't start with a command. Assuming 'M' command. First token: {tokens[0]}")
                         cmd = 'M'
                     
                     i = 0
                     while i < len(tokens):
                         # Safety check for index out of bounds
                         if i >= len(tokens):
-                            print("    Warning: Index out of bounds in path data processing")
                             break
                             
                         token = tokens[i]
@@ -855,7 +780,6 @@ class SVGBuilder:
                                         y = y_val
                                     
                                     update_bbox(x, y)
-                                    print(f"    Moveto: x={x}, y={y}")
                                 i += 2
                                 
                             elif cmd is not None and cmd in 'Ll' and i + 1 < len(tokens):
@@ -872,7 +796,6 @@ class SVGBuilder:
                                         y = y_val
                                     
                                     update_bbox(x, y)
-                                    print(f"    Lineto: x={x}, y={y}")
                                 i += 2
                                 
                             elif cmd is not None and cmd in 'Hh':
@@ -886,7 +809,6 @@ class SVGBuilder:
                                         x = x_val
                                     
                                     update_bbox(x, y)
-                                    print(f"    H-Lineto: x={x}, y={y}")
                                 i += 1
                                 
                             elif cmd is not None and cmd in 'Vv':
@@ -900,7 +822,6 @@ class SVGBuilder:
                                         y = y_val
                                     
                                     update_bbox(x, y)
-                                    print(f"    V-Lineto: x={x}, y={y}")
                                 i += 1
                                 
                             elif cmd is not None and cmd in 'Cc' and i + 5 < len(tokens):
@@ -1008,33 +929,19 @@ class SVGBuilder:
                                 
                             else:
                                 # Skip unknown commands or formats
-                                if cmd is None:
-                                    print(f"    Warning: Encountered None command at position {i} in path data. Skipping token '{tokens[i]}' if available.")
-                                else:
-                                    print(f"    Warning: Skipping unknown command '{cmd}' at position {i}")
                                 i += 1
-                        except (IndexError, ValueError) as e:
-                            print(f"    Error processing command '{cmd}' at position {i}: {e}")
+                        except (IndexError, ValueError):
                             i += 1
-                except Exception as e:
-                    print(f"    Error in overall path parsing: {e}")
+                except Exception:
+                    pass
 
-        # print("\nCurrent bounding box values:")
-        # print(f"  min_x: {min_x}")
-        # print(f"  max_x: {max_x}")
-        # print(f"  min_y: {min_y}")
-        # print(f"  max_y: {max_y}")
-        
         # Handle cases where no elements were found or parsed
         if min_x == float('inf') or max_x == float('-inf') or min_y == float('inf') or max_y == float('-inf'):
-            print("Warning: No valid elements found or bounding box calculation failed")
-            
             # If viewBox is specified, use it as fallback
             if viewbox_match:
                 try:
                     viewbox_parts = viewbox.split()
                     if len(viewbox_parts) == 4:
-                        print("Using viewBox as fallback for bounding box")
                         min_x = float(viewbox_parts[0])
                         min_y = float(viewbox_parts[1])
                         width_val = float(viewbox_parts[2])
@@ -1060,11 +967,6 @@ class SVGBuilder:
         # Calculate width and height
         width = max_x - min_x
         height = max_y - min_y
-        
-        print(f"  width: {width}")
-        print(f"  height: {height}")
-        
-        print("=== Finished calculate_bounding_box ===\n")
         
         return {
             'min_x': min_x,
@@ -1098,15 +1000,12 @@ class SVGBuilder:
         Example:
             svg_attrs, inner_content = svg_builder.extract_svg_contents(raw_svg)
         """
-        print("\n=== Starting extract_svg_contents ===")
-        
         # Remove XML declaration if present
         svg_content = re.sub(r'<\?xml[^>]*\?>', '', svg_content)
         
         # Extract the SVG tag and its attributes
         svg_match = re.search(r'<svg([^>]*)>(.*)</svg>', svg_content, re.DOTALL)
         if not svg_match:
-            print("Warning: No valid SVG content found")
             return "", ""
             
         svg_attrs = svg_match.group(1)
@@ -1136,9 +1035,6 @@ class SVGBuilder:
         for attr_pattern in stroke_attributes:
             inner_content = re.sub(attr_pattern, '', inner_content)
         
-        print("SVG content cleaned up successfully")
-        print(f"Found SVG tag with attributes: {svg_attrs}")
-        
         return svg_attrs, inner_content
 
     def add_schematic(self, svg_content: str, color: str = 'black') -> 'SVGBuilder':
@@ -1156,9 +1052,10 @@ class SVGBuilder:
         Returns:
             The builder instance for method chaining
         """
-        print("\n=== Starting add_schematic ===")
-        print(f"Parent SVG dimensions: {self.width}mm x {self.height}mm")
-        
+        # --- Constants ---
+        border_inset = 10 # mm
+        # --- End Constants ---
+
         # Extract and clean up SVG contents
         svg_attrs, inner_content = self.extract_svg_contents(svg_content)
         
@@ -1169,81 +1066,80 @@ class SVGBuilder:
         parent_svg = self.to_string()
         parent_svg_attrs, parent_inner_content = self.extract_svg_contents(parent_svg)
         
-        print("\nSearching parent SVG content for legend and title groups...")
-        print(f"Parent SVG content length: {len(parent_inner_content)}")
-        print(f"First 500 characters of parent content:")
-        print(parent_inner_content[:500])
-        
         # Find the upper boundary by checking legend and title groups
         upper_boundary = 0
         
         # Check legend group
         legend_pattern = r'<g[^>]*id="legend"[^>]*>.*?</g>'
         legend_match = re.search(legend_pattern, parent_inner_content, re.DOTALL)
-        print("\nLegend search results:")
         if legend_match:
-            print("Found legend group")
             legend_content = legend_match.group(0)
-            print(f"Legend content length: {len(legend_content)}")
-            print(f"First 200 chars of legend content: {legend_content[:200]}")
-            
-            legend_bbox = self.calculate_bounding_box(legend_content)
-            print(f"Legend bounding box: {legend_bbox}")
-            legend_bottom = legend_bbox['min_y'] + legend_bbox['height']
-            upper_boundary = max(upper_boundary, legend_bottom)
-            print(f"Legend bottom: {legend_bottom}mm")
+            legend_svg_for_bbox = f"<svg>{legend_content}</svg>"
+            legend_bbox = self.calculate_bounding_box(legend_svg_for_bbox)
+            if legend_bbox['height'] > 0:
+                legend_bottom = legend_bbox['min_y'] + legend_bbox['height']
+                upper_boundary = max(upper_boundary, legend_bottom)
+            else:
+                pass
         else:
-            print("No legend group found")
-            print(f"Legend pattern used: {legend_pattern}")
-        
+            pass
+
         # Check title group
         title_pattern = r'<g[^>]*id="titles"[^>]*>.*?</g>'
         title_match = re.search(title_pattern, parent_inner_content, re.DOTALL)
-        print("\nTitle search results:")
         if title_match:
-            print("Found title group")
             title_content = title_match.group(0)
-            print(f"Title content length: {len(title_content)}")
-            print(f"First 200 chars of title content: {title_content[:200]}")
-            
-            title_bbox = self.calculate_bounding_box(title_content)
-            print(f"Title bounding box: {title_bbox}")
-            title_bottom = title_bbox['min_y'] + title_bbox['height']
-            upper_boundary = max(upper_boundary, title_bottom)
-            print(f"Title bottom: {title_bottom}mm")
+            title_svg_for_bbox = f"<svg>{title_content}</svg>"
+            title_bbox = self.calculate_bounding_box(title_svg_for_bbox)
+            if title_bbox['height'] > 0:
+                title_bottom = title_bbox['min_y'] + title_bbox['height']
+                upper_boundary = max(upper_boundary, title_bottom)
+            else:
+                pass
         else:
-            print("No title group found")
-            print(f"Title pattern used: {title_pattern}")
+            pass
+
+        # Calculate available space for the schematic
+        available_width = self.width - 2 * border_inset
+        available_height = self.height - upper_boundary - border_inset
+
+        # Check for non-positive dimensions or invalid bbox
+        if available_width <= 0 or available_height <= 0 or bbox['width'] <= 0 or bbox['height'] <= 0:
+             print(f"ERROR: Cannot place schematic. Invalid dimensions.")
+             self.text(self.width / 2, self.height / 2, "Error: Cannot place schematic", {'fill': 'red', 'text-anchor': 'middle'})
+             return self
+
+        # Calculate the initial scale factor to fit the schematic
+        scale_x = available_width / bbox['width']
+        scale_y = available_height / bbox['height']
+        # Use 80% of the minimum fitting scale
+        scale = min(scale_x, scale_y) * 0.85 
+
+        # Calculate the dimensions of the scaled schematic
+        scaled_width = bbox['width'] * scale
+        scaled_height = bbox['height'] * scale
+
+        # --- Calculate Translation --- 
+        # Goal: Center the 80% scaled schematic within the available area.
         
-        print(f"\nFinal upper boundary: {upper_boundary}mm")
-        
-        # Draw a line at the upper boundary for visual verification
-        self.line(
-            0, upper_boundary,
-            self.width, upper_boundary,
-            {
-                'stroke': 'red',
-                'stroke-width': '3'
-            }
-        )
-        
-        # For debugging, keep the schematic centered in the viewport
-        scale_x = self.width / bbox['width']
-        scale_y = self.height / bbox['height']
-        scale = min(scale_x, scale_y) * 0.8  # Use 80% of viewport
-        
-        # Center in viewport for debugging
-        translate_x = (self.width - (bbox['width'] * scale)) / 2 - (bbox['min_x'] * scale)
-        translate_y = (self.height - (bbox['height'] * scale)) / 2 - (bbox['min_y'] * scale)
-        
-        # Create a group for the schematic with transform
+        # Calculate X translation:
+        available_x_start = border_inset
+        final_schematic_x = available_x_start + (available_width - scaled_width) / 2
+        translate_x = final_schematic_x - (bbox['min_x'] * scale)
+
+        # Calculate Y translation:
+        available_y_start = upper_boundary # Top of the available space
+        final_schematic_y = available_y_start + (available_height - scaled_height) / 2
+        translate_y = final_schematic_y - (bbox['min_y'] * scale)
+        # --- End Calculate Translation ---
+
+        # Create a group for the schematic with the calculated transform
         group_attrs = {
-            'transform': f'translate({translate_x},{translate_y}) scale({scale})'
+            'transform': f'translate({translate_x:.2f}, {translate_y:.2f}) scale({scale:.4f})',
+            'id': 'schematic-content' # Add an ID for easier selection/debugging
         }
-        print(f"Group transform: {group_attrs['transform']}")
-            
+
         # Add the schematic in a new group
-        print("Adding schematic to group...")
         self.begin_group(group_attrs)
         
         # Add default stroke attributes to all elements that can have strokes
@@ -1264,7 +1160,7 @@ class SVGBuilder:
                 attrs = match.group(1)
                 # Check if the element already has a stroke attribute
                 if 'stroke=' not in attrs:
-                    attrs = f' stroke="{color}" stroke-width="2"{attrs}'
+                    attrs = f' stroke="{color}" stroke-width="1"{attrs}'
                 return f'<{element_name}{attrs}>'
             
             inner_content = re.sub(element_pattern, add_stroke_attrs, inner_content)
@@ -1273,7 +1169,6 @@ class SVGBuilder:
         self._add_element(inner_content)
         self.end_group()
         
-        print("=== Finished add_schematic ===\n")
         return self
     
     def to_string(self) -> str:
