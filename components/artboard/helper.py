@@ -209,9 +209,9 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
         svg.title("schematic")
         
         # Add the schematic SVG content        
-        svg.calculate_bounding_box(schematic_svg)
+        # svg.calculate_bounding_box(schematic_svg)
         
-        svg.add_schematic(schematic_svg)
+        svg.add_schematic(schematic_svg, pen_color)
         
         svg.end_group()
     

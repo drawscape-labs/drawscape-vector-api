@@ -1084,7 +1084,8 @@ class SVGBuilder:
         2. Removes metadata elements
         3. Removes empty defs elements
         4. Removes Inkscape-specific attributes
-        5. Extracts the inner content from the SVG tag
+        5. Removes stroke-related attributes (stroke, stroke-width, etc.)
+        6. Extracts the inner content from the SVG tag
         
         Args:
             svg_content: Raw SVG content as a string
@@ -1120,21 +1121,37 @@ class SVGBuilder:
         # Remove Inkscape-specific attributes from all elements
         inner_content = re.sub(r'\sinkscape:[^=]+="[^"]*"', '', inner_content)
         
+        # Remove stroke-related attributes
+        stroke_attributes = [
+            r'\sstroke-width="[^"]*"',
+            r'\sstroke="[^"]*"',
+            r'\sstroke-opacity="[^"]*"',
+            r'\sstroke-dasharray="[^"]*"',
+            r'\sstroke-dashoffset="[^"]*"',
+            r'\sstroke-linecap="[^"]*"',
+            r'\sstroke-linejoin="[^"]*"',
+            r'\sstroke-miterlimit="[^"]*"'
+        ]
+        
+        for attr_pattern in stroke_attributes:
+            inner_content = re.sub(attr_pattern, '', inner_content)
+        
         print("SVG content cleaned up successfully")
         print(f"Found SVG tag with attributes: {svg_attrs}")
         
         return svg_attrs, inner_content
 
-    def add_schematic(self, svg_content: str, attrs: dict = None) -> 'SVGBuilder':
+    def add_schematic(self, svg_content: str, color: str = 'black') -> 'SVGBuilder':
         """
-        Adds a schematic SVG to the canvas, scaling it to fit within the parent SVG's dimensions
-        
-        This method takes a raw SVG string, extracts its elements, and scales them to fit
-        within the current SVG canvas while maintaining aspect ratio and centering the content.
+        Adds a schematic SVG to the canvas, scaling it to fit within the available space.
+        The available space is defined by:
+        - Top boundary: Bottom of the legend box or title/subtitle (whichever is lower)
+        - Left/Right boundaries: Border insets
+        - Bottom boundary: Border inset
         
         Args:
             svg_content: Raw SVG content as a string
-            attrs: Optional additional attributes to apply to the schematic group
+            color: Color to use for strokes (default: 'black')
             
         Returns:
             The builder instance for method chaining
@@ -1147,62 +1164,110 @@ class SVGBuilder:
         
         # Calculate the actual bounding box of the SVG content
         bbox = self.calculate_bounding_box(svg_content)
-        # print("Calculated bounding box from SVG elements:")
-        # print(f"  min_x: {bbox['min_x']}")
-        # print(f"  max_x: {bbox['max_x']}")
-        # print(f"  min_y: {bbox['min_y']}")
-        # print(f"  max_y: {bbox['max_y']}")
-        # print(f"  width: {bbox['width']}")
-        # print(f"  height: {bbox['height']}")
         
-        # Calculate scaling to fit within our viewport
+        # Get the parent SVG's content to search for legend and title groups
+        parent_svg = self.to_string()
+        parent_svg_attrs, parent_inner_content = self.extract_svg_contents(parent_svg)
+        
+        print("\nSearching parent SVG content for legend and title groups...")
+        print(f"Parent SVG content length: {len(parent_inner_content)}")
+        print(f"First 500 characters of parent content:")
+        print(parent_inner_content[:500])
+        
+        # Find the upper boundary by checking legend and title groups
+        upper_boundary = 0
+        
+        # Check legend group
+        legend_pattern = r'<g[^>]*id="legend"[^>]*>.*?</g>'
+        legend_match = re.search(legend_pattern, parent_inner_content, re.DOTALL)
+        print("\nLegend search results:")
+        if legend_match:
+            print("Found legend group")
+            legend_content = legend_match.group(0)
+            print(f"Legend content length: {len(legend_content)}")
+            print(f"First 200 chars of legend content: {legend_content[:200]}")
+            
+            legend_bbox = self.calculate_bounding_box(legend_content)
+            print(f"Legend bounding box: {legend_bbox}")
+            legend_bottom = legend_bbox['min_y'] + legend_bbox['height']
+            upper_boundary = max(upper_boundary, legend_bottom)
+            print(f"Legend bottom: {legend_bottom}mm")
+        else:
+            print("No legend group found")
+            print(f"Legend pattern used: {legend_pattern}")
+        
+        # Check title group
+        title_pattern = r'<g[^>]*id="titles"[^>]*>.*?</g>'
+        title_match = re.search(title_pattern, parent_inner_content, re.DOTALL)
+        print("\nTitle search results:")
+        if title_match:
+            print("Found title group")
+            title_content = title_match.group(0)
+            print(f"Title content length: {len(title_content)}")
+            print(f"First 200 chars of title content: {title_content[:200]}")
+            
+            title_bbox = self.calculate_bounding_box(title_content)
+            print(f"Title bounding box: {title_bbox}")
+            title_bottom = title_bbox['min_y'] + title_bbox['height']
+            upper_boundary = max(upper_boundary, title_bottom)
+            print(f"Title bottom: {title_bottom}mm")
+        else:
+            print("No title group found")
+            print(f"Title pattern used: {title_pattern}")
+        
+        print(f"\nFinal upper boundary: {upper_boundary}mm")
+        
+        # Draw a line at the upper boundary for visual verification
+        self.line(
+            0, upper_boundary,
+            self.width, upper_boundary,
+            {
+                'stroke': 'red',
+                'stroke-width': '3'
+            }
+        )
+        
+        # For debugging, keep the schematic centered in the viewport
         scale_x = self.width / bbox['width']
         scale_y = self.height / bbox['height']
-        scale = min(scale_x, scale_y) * 0.8  # Use 90% of available space
+        scale = min(scale_x, scale_y) * 0.8  # Use 80% of viewport
         
-        # Calculate translation to center the content
-        # First we need to account for the original bounding box offset
-        # Then calculate centering in the target viewport
+        # Center in viewport for debugging
         translate_x = (self.width - (bbox['width'] * scale)) / 2 - (bbox['min_x'] * scale)
         translate_y = (self.height - (bbox['height'] * scale)) / 2 - (bbox['min_y'] * scale)
         
-        # print(f"Transform calculations:")
-        # print(f"  scale_x: {scale_x}")
-        # print(f"  scale_y: {scale_y}")
-        # print(f"  final scale: {scale}")
-        # print(f"  translate_x: {translate_x}")
-        # print(f"  translate_y: {translate_y}")
-        
         # Create a group for the schematic with transform
-        # The order is: first scale, then translate (SVG transforms are applied right-to-left)
         group_attrs = {
             'transform': f'translate({translate_x},{translate_y}) scale({scale})'
         }
         print(f"Group transform: {group_attrs['transform']}")
-        
-        # Merge with any additional attributes
-        if attrs:
-            group_attrs.update(attrs)
-            print(f"Additional attributes added: {attrs}")
             
         # Add the schematic in a new group
         print("Adding schematic to group...")
         self.begin_group(group_attrs)
         
-        # Draw the bounding box for testing
-        self.rect(
-            bbox['min_x'],
-            bbox['min_y'],
-            bbox['width'],
-            bbox['height'],
-            {
-                'fill': 'red',
-                'stroke': 'red',
-                'stroke-width': '0.5',
-                'stroke-dasharray': '2,2',
-                'opacity': '0.7'
-            }
-        )
+        # Add default stroke attributes to all elements that can have strokes
+        elements_with_strokes = [
+            ('path', r'<path([^>]*)>'),
+            ('rect', r'<rect([^>]*)>'),
+            ('circle', r'<circle([^>]*)>'),
+            ('ellipse', r'<ellipse([^>]*)>'),
+            ('line', r'<line([^>]*)>'),
+            ('polyline', r'<polyline([^>]*)>'),
+            ('polygon', r'<polygon([^>]*)>')
+        ]
+        
+        print(f"Pen color: {color}")
+
+        for element_name, element_pattern in elements_with_strokes:
+            def add_stroke_attrs(match):
+                attrs = match.group(1)
+                # Check if the element already has a stroke attribute
+                if 'stroke=' not in attrs:
+                    attrs = f' stroke="{color}" stroke-width="2"{attrs}'
+                return f'<{element_name}{attrs}>'
+            
+            inner_content = re.sub(element_pattern, add_stroke_attrs, inner_content)
         
         # Add the inner content directly without the containing SVG tag
         self._add_element(inner_content)
