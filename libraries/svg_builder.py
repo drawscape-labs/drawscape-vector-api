@@ -191,6 +191,29 @@ class SVGBuilder:
         element = f'<rect x="{x}" y="{y}" width="{width}" height="{height}"{self._format_attrs(attrs)} />'
         return self._add_element(element)
     
+    def _escape_xml(self, text: str) -> str:
+        """
+        Escapes special characters in XML/SVG text content
+        
+        Args:
+            text: The text to escape
+            
+        Returns:
+            Escaped text safe for XML/SVG
+        """
+        replacements = [
+            ('&', '&amp;'),
+            ('<', '&lt;'),
+            ('>', '&gt;'),
+            ('"', '&quot;'),
+            ("'", '&apos;')
+        ]
+        
+        result = str(text)
+        for char, replacement in replacements:
+            result = result.replace(char, replacement)
+        return result
+    
     def title(self, content: str, attrs: dict = None) -> 'SVGBuilder':
         """
         Adds a title element to the SVG - titles provide a tooltip and improve accessibility
@@ -210,7 +233,8 @@ class SVGBuilder:
             svg_builder.end_group()
         """
         attrs = attrs or {}
-        element = f'<title>{content}</title>'
+        safe_content = self._escape_xml(content)
+        element = f'<title>{safe_content}</title>'
         return self._add_element(element)
     
     def text(self, x: float, y: float, content: str, attrs: dict = None) -> 'SVGBuilder':
@@ -235,7 +259,8 @@ class SVGBuilder:
             })
         """
         attrs = attrs or {}
-        element = f'<text x="{x}" y="{y}"{self._format_attrs(attrs)}>{content}</text>'
+        safe_content = self._escape_xml(content)
+        element = f'<text x="{x}" y="{y}"{self._format_attrs(attrs)}>{safe_content}</text>'
         return self._add_element(element)
     
     def hershey_text(self, x: float, y: float, content: str, scale: float = 1.0, attrs: dict = None) -> 'SVGBuilder':
@@ -281,7 +306,7 @@ class SVGBuilder:
         self.begin_group(group_attrs)
         
         # Add a title element for readability in the SVG code
-        self.title(f"{content}")
+        self.title(content)
         
         # Generate SVG paths for each line segment in the text
         for line in self.hershey_font.lines_for_text(content):
@@ -364,7 +389,7 @@ class SVGBuilder:
         merged_text_attrs = {**default_text_attrs, **(text_attrs or {})}
         
         # Add a title for identification
-        self.title(f"{content} (with bounding box)")
+        self.title(content + " (with bounding box)")
         
         # Create the text paths
         for line in self.hershey_font.lines_for_text(content):
