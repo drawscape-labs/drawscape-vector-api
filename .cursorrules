@@ -1,1 +1,5 @@
 When generating SVG files, please use the /libraries/svg_builder.py file.
+
+This is our Python Vector API. Most of what we'll be doing here is generating SVG files that will then be passed to a Pen Plotter. 
+Pen Plotters can only draw lines and paths. There's no such thing as fill. 
+Try and keep this in mind when we create SVG files and anything that might affect the SVG files when we send them to a plotter to draw.

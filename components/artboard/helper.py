@@ -82,6 +82,25 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
         BORDER_HEIGHT, 
         {'fill': 'none', 'stroke': pen_color, 'stroke-width': BORDER_STROKE_WIDTH}
     )
+    
+    # Define the reverse direction path for a rectangle in counter-clockwise direction
+    # Starting from bottom-right, going counter-clockwise
+    path_data = (
+        f"M {BORDER_INSET + BORDER_WIDTH} {BORDER_INSET + BORDER_HEIGHT} " +  # Start at bottom-right
+        f"L {BORDER_INSET} {BORDER_INSET + BORDER_HEIGHT} " +                 # Bottom edge (right to left)
+        f"L {BORDER_INSET} {BORDER_INSET} " +                                 # Left edge (bottom to top)
+        f"L {BORDER_INSET + BORDER_WIDTH} {BORDER_INSET} " +                  # Top edge (left to right)
+        f"L {BORDER_INSET + BORDER_WIDTH} {BORDER_INSET + BORDER_HEIGHT} " +  # Right edge (top to bottom)
+        f"Z"                                                                  # Close path
+    )
+    
+    svg.path(path_data, {
+        'fill': 'none', 
+        'stroke': pen_color, 
+        'stroke-width': BORDER_STROKE_WIDTH,
+        'stroke-dasharray': '0'  # Solid line, same as the original border
+    })
+    
     svg.end_group()
 
     # Add outer border rectangle
@@ -178,10 +197,13 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
 
             # Add label
             label_box = svg.get_hershey_text_bounding_box(item['label'])
-            label_y = y + (LEGEND_CELL_HEIGHT / 2) + ((label_box['height'] / 2) * LEGEND_TEXT_SCALE_FACTOR)
+            # Calculate vertical center of the text by considering both min_y and max_y
+            label_text_center = (label_box['min_y'] + label_box['max_y']) / 2
+            # Position text so its center aligns with the cell center
+            label_y = y + (LEGEND_CELL_HEIGHT / 2) - (label_text_center * LEGEND_TEXT_SCALE_FACTOR)
             svg.hershey_text(
                 legend_start_x + 2,
-                label_y - 1,
+                label_y,
                 item['label'],
                 LEGEND_TEXT_SCALE_FACTOR,
                 {'stroke': pen_color, 'stroke-width': str(TEXT_STROKE_WIDTH)}
@@ -189,10 +211,13 @@ def render_blueprint_svg(title="Blueprint", subtitle="", size='tabloid', orienta
 
             # Add content
             content_box = svg.get_hershey_text_bounding_box(item['content'])
-            content_y = y + (LEGEND_CELL_HEIGHT / 2) + ((content_box['height'] / 2) * LEGEND_TEXT_SCALE_FACTOR)
+            # Calculate vertical center of the text by considering both min_y and max_y
+            content_text_center = (content_box['min_y'] + content_box['max_y']) / 2
+            # Position text so its center aligns with the cell center
+            content_y = y + (LEGEND_CELL_HEIGHT / 2) - (content_text_center * LEGEND_TEXT_SCALE_FACTOR)
             svg.hershey_text(
                 legend_start_x + name_column_width + 2,
-                content_y - 1,
+                content_y,
                 item['content'],
                 LEGEND_TEXT_SCALE_FACTOR,
                 {'stroke': pen_color, 'stroke-width': str(TEXT_STROKE_WIDTH)}

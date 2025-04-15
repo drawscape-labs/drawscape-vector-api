@@ -558,6 +558,10 @@ class SVGBuilder:
         svg_attrs_str = svg_match.group(1)
         inner_content = svg_match.group(2)
         
+        # Remove namespace declarations for sodipodi/inkscape
+        svg_attrs_str = re.sub(r'\sxmlns:sodipodi="[^"]*"', '', svg_attrs_str)
+        svg_attrs_str = re.sub(r'\sxmlns:inkscape="[^"]*"', '', svg_attrs_str)
+        
         # Extract width, height, and viewBox using regex
         width_match = re.search(r'width="([^"]+)"', svg_attrs_str)
         height_match = re.search(r'height="([^"]+)"', svg_attrs_str)
@@ -984,10 +988,11 @@ class SVGBuilder:
         This method:
         1. Removes XML declaration
         2. Removes metadata elements
-        3. Removes empty defs elements
-        4. Removes Inkscape-specific attributes
-        5. Removes stroke-related attributes (stroke, stroke-width, etc.)
-        6. Extracts the inner content from the SVG tag
+        3. Removes sodipodi:namedview elements
+        4. Removes empty defs elements
+        5. Removes Inkscape-specific attributes
+        6. Removes stroke-related attributes (stroke, stroke-width, etc.)
+        7. Extracts the inner content from the SVG tag
         
         Args:
             svg_content: Raw SVG content as a string
@@ -1008,17 +1013,28 @@ class SVGBuilder:
         if not svg_match:
             return "", ""
             
-        svg_attrs = svg_match.group(1)
+        svg_attrs_str = svg_match.group(1)
         inner_content = svg_match.group(2)
+        
+        # Remove namespace declarations for sodipodi/inkscape
+        svg_attrs_str = re.sub(r'\sxmlns:sodipodi="[^"]*"', '', svg_attrs_str)
+        svg_attrs_str = re.sub(r'\sxmlns:inkscape="[^"]*"', '', svg_attrs_str)
         
         # Remove metadata elements
         inner_content = re.sub(r'<metadata[^>]*>.*?</metadata>', '', inner_content, flags=re.DOTALL)
+        
+        # Remove sodipodi:namedview elements
+        inner_content = re.sub(r'<sodipodi:namedview[^>]*>.*?</sodipodi:namedview>', '', inner_content, flags=re.DOTALL)
+        inner_content = re.sub(r'<sodipodi:namedview[^>]*?/>', '', inner_content)
         
         # Remove empty <defs/> elements
         inner_content = re.sub(r'<defs\s*/>', '', inner_content, flags=re.DOTALL)
         
         # Remove Inkscape-specific attributes from all elements
         inner_content = re.sub(r'\sinkscape:[^=]+="[^"]*"', '', inner_content)
+        
+        # Remove Sodipodi-specific attributes from all elements
+        inner_content = re.sub(r'\ssodipodi:[^=]+="[^"]*"', '', inner_content)
         
         # Remove stroke-related attributes
         stroke_attributes = [
@@ -1035,7 +1051,7 @@ class SVGBuilder:
         for attr_pattern in stroke_attributes:
             inner_content = re.sub(attr_pattern, '', inner_content)
         
-        return svg_attrs, inner_content
+        return svg_attrs_str, inner_content
 
     def add_schematic(self, svg_content: str, color: str = 'black') -> 'SVGBuilder':
         """
@@ -1155,6 +1171,17 @@ class SVGBuilder:
         
         print(f"Pen color: {color}")
 
+        # First, remove any style attributes that might override our stroke settings
+        for element_name, element_pattern in elements_with_strokes:
+            def remove_style_attr(match):
+                attrs = match.group(1)
+                # Remove style attributes that might contain stroke properties
+                attrs = re.sub(r'\sstyle="[^"]*"', '', attrs)
+                return f'<{element_name}{attrs}>'
+            
+            inner_content = re.sub(element_pattern, remove_style_attr, inner_content)
+
+        # Then add our stroke attributes if they don't exist
         for element_name, element_pattern in elements_with_strokes:
             def add_stroke_attrs(match):
                 attrs = match.group(1)
