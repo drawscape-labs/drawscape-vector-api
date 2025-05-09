@@ -8,8 +8,8 @@ from libraries.svg_builder import SVGBuilder
 postcards_bp = Blueprint('postcards', __name__, url_prefix='/postcards')
 
 # Constants
-POSTCARD_WIDTH = 152.4  # 6 inches in mm
-POSTCARD_HEIGHT = 101.6  # 4 inches in mm
+POSTCARD_WIDTH = 165.1  # 6.5 inches in mm
+POSTCARD_HEIGHT = 114.3  # 4.5 inches in mm
 ADDRESS_SIZE = 0.15  # Size for all address text
 MARGIN = 0  # Margin from the left edge in mm
 LINE_SPACING = 6  # Spacing between lines in mm
@@ -197,10 +197,7 @@ def render_postcard_label(params: PostcardLabelParams) -> str:
     """
     # Create SVG (6x4 inches = 152.4 x 101.6 mm)
     svg = SVGBuilder(POSTCARD_WIDTH, POSTCARD_HEIGHT)
-    
-    # Add white background
-    svg.rect(0, 0, POSTCARD_WIDTH, POSTCARD_HEIGHT, {'fill': 'white', 'stroke': 'none'})
-    
+        
     # Add stamp placeholder in top right corner
     stamp_x = POSTCARD_WIDTH - STAMP_WIDTH - STAMP_MARGIN
     stamp_y = STAMP_MARGIN
