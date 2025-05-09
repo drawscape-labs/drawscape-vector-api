@@ -31,7 +31,7 @@ class PostcardLabelParams(BaseModel):
     address_line_1: str = Field(..., max_length=100, description="First line of the address")
     address_line_2: str = Field("", max_length=100, description="Second line of the address (optional)")
     city: str = Field(..., max_length=50, description="City name")
-    state: str = Field(..., max_length=2, description="State code (2-character)")
+    state: str = Field(..., max_length=50, description="State code (2-character)")
     zipcode: str = Field(..., max_length=10, description="ZIP code")
     country: str = Field("", max_length=100, description="Country (optional)")
 
@@ -232,7 +232,7 @@ def postcard_label() -> Response:
         - address_line_1: First line of the address (required, max 100 chars)
         - address_line_2: Second line of the address (optional, max 100 chars)
         - city: City name (required, max 50 chars)
-        - state: State code (required, 2 chars)
+        - state: State code (required, max 50 chars)
         - zipcode: ZIP code (required, max 10 chars)
         - country: Country name (optional, max 100 chars)
     
