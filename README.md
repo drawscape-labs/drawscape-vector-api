@@ -3,6 +3,20 @@ API built in flask to serve Drawscape SVg functionality.
 ## Dev
 Using Python 3.8
 
+
+## Installation
+```
+make install
+```
+
+## Run Dev
+```
+make run
+```
+
+
+
+
 ```
 conda env update --file environment.yml --prune  
 conda activate drawscape_api

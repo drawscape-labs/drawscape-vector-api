@@ -1,18 +1,19 @@
-from flask      import Flask, jsonify
 from flask import Flask, jsonify, request
 import os
 from flask_cors import CORS
 
-from components.factorio.main import factorio
+# from components.factorio.main import factorio
 from components.blueprints.main import blueprint_bp
 from components.artboard.main import artboard_bp
+from components.postcards.main import postcards_bp
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-app.register_blueprint(factorio)
+# app.register_blueprint(factorio)
 app.register_blueprint(blueprint_bp)
 app.register_blueprint(artboard_bp)
+app.register_blueprint(postcards_bp)
 
 @app.before_request
 def log_route_call():
