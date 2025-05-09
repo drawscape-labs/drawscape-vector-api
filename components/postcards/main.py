@@ -1,9 +1,27 @@
 from flask import Blueprint, jsonify, Response, request
 from flask_pydantic import validate
 from pydantic import BaseModel, Field, ValidationError
+from typing import Dict, List, Any
 from libraries.svg_builder import SVGBuilder
 
+# Blueprint definition
 postcards_bp = Blueprint('postcards', __name__, url_prefix='/postcards')
+
+# Constants
+POSTCARD_WIDTH = 152.4  # 6 inches in mm
+POSTCARD_HEIGHT = 101.6  # 4 inches in mm
+ADDRESS_SIZE = 0.15  # Size for all address text
+MARGIN = 0  # Margin from the left edge in mm
+LINE_SPACING = 6  # Spacing between lines in mm
+STAMP_WIDTH = 22.1  # Width of standard US stamp in mm (0.87 inches)
+STAMP_HEIGHT = 24.9  # Height of standard US stamp in mm (0.98 inches)
+STAMP_MARGIN = 10  # Margin from edges for stamp placement in mm
+FROM_MARGIN = 10  # Margin from edges for FROM address in mm
+
+# Sender information
+FROM_NAME = "Drawscape"
+FROM_ADDRESS = "Truckee, CA"
+
 
 class PostcardLabelParams(BaseModel):
     """
@@ -17,46 +35,14 @@ class PostcardLabelParams(BaseModel):
     zipcode: str = Field(..., max_length=10, description="ZIP code")
     country: str = Field("", max_length=100, description="Country (optional)")
 
-def render_postcard_label(params: PostcardLabelParams) -> str:
+
+def add_from_address(svg: SVGBuilder) -> None:
     """
-    Creates a 6x4 inch (152.4 x 101.6 mm) postcard SVG with address label
+    Adds the sender's address to the postcard
     
     Args:
-        params: Validated PostcardLabelParams object containing address details
-        
-    Returns:
-        SVG content as a string
+        svg: SVGBuilder instance
     """
-    # Constants
-    ADDRESS_SIZE = 0.15  # Size for all address text
-    MARGIN = 0  # Margin from the left edge in mm
-    LINE_SPACING = 6  # Spacing between lines in mm
-    STAMP_WIDTH = 22.1  # Width of standard US stamp in mm (0.87 inches)
-    STAMP_HEIGHT = 24.9  # Height of standard US stamp in mm (0.98 inches)
-    STAMP_MARGIN = 10  # Margin from edges for stamp placement in mm
-    
-    # FROM address constants
-    FROM_NAME = "Drawscape"
-    FROM_ADDRESS = "Truckee, CA"
-    FROM_MARGIN = 10  # Margin from edges for FROM address in mm
-    
-    # Create SVG (6x4 inches = 152.4 x 101.6 mm)
-    svg = SVGBuilder(152.4, 101.6)    
-    
-    # Add white background
-    svg.rect(0, 0, 152.4, 101.6, {'fill': 'white', 'stroke': 'none'})
-    
-    # Add stamp placeholder in top right corner
-    stamp_x = 152.4 - STAMP_WIDTH - STAMP_MARGIN
-    stamp_y = STAMP_MARGIN
-    svg.rect(stamp_x, stamp_y, STAMP_WIDTH, STAMP_HEIGHT, {
-        'stroke': 'black', 
-        'stroke-width': '0.5', 
-        'stroke-dasharray': '2,1',
-        'fill': 'none'
-    })
-    
-    # Add FROM address in top left
     svg.begin_group({'id': 'from-address'})
     from_x = FROM_MARGIN
     from_y = FROM_MARGIN + LINE_SPACING
@@ -75,8 +61,18 @@ def render_postcard_label(params: PostcardLabelParams) -> str:
     })
     
     svg.end_group()
+
+
+def get_address_lines(params: PostcardLabelParams) -> List[str]:
+    """
+    Extracts all address lines from the parameters
     
-    # Collect all text lines to calculate bounding boxes
+    Args:
+        params: PostcardLabelParams object
+        
+    Returns:
+        List of address text lines
+    """
     text_lines = []
     
     # Add name if provided
@@ -97,9 +93,20 @@ def render_postcard_label(params: PostcardLabelParams) -> str:
     if params.country:
         text_lines.append(params.country)
     
-    # Get the number of lines for vertical centering
-    line_count = len(text_lines)
+    return text_lines
+
+
+def calculate_address_positioning(svg: SVGBuilder, text_lines: List[str]) -> Dict[str, Any]:
+    """
+    Calculates the positioning and dimensions of address text
     
+    Args:
+        svg: SVGBuilder instance
+        text_lines: List of text lines to render
+        
+    Returns:
+        Dictionary with positioning information
+    """
     # Calculate bounding box for each line
     max_width = 0
     max_width_line = ""
@@ -119,25 +126,46 @@ def render_postcard_label(params: PostcardLabelParams) -> str:
             max_width_line = line
     
     # Calculate center position for the address group
-    postcard_center_x = 152.4 / 2
-    postcard_center_y = 101.6 / 2
+    postcard_center_x = POSTCARD_WIDTH / 2
+    postcard_center_y = POSTCARD_HEIGHT / 2
     
     # Calculate horizontal centering
     address_x = postcard_center_x - (max_width / 2)
     
     # Calculate vertical centering
+    line_count = len(text_lines)
     total_height = line_count * LINE_SPACING
     address_y = postcard_center_y - (total_height / 2) + LINE_SPACING  # Add half line spacing to align properly
     
+    return {
+        'address_x': address_x,
+        'address_y': address_y,
+        'bounding_boxes': bounding_boxes,
+        'max_width': max_width,
+        'max_width_line': max_width_line,
+        'line_count': line_count,
+        'total_height': total_height
+    }
+
+
+def add_address_to_svg(svg: SVGBuilder, text_lines: List[str], positioning: Dict[str, Any]) -> None:
+    """
+    Adds the address text to the SVG
+    
+    Args:
+        svg: SVGBuilder instance
+        text_lines: List of text lines to render
+        positioning: Dictionary with positioning information
+    """
     # Create a group for the address
     svg.begin_group({'id': 'address'})
     
     # Starting position - centered horizontally and vertically
-    x_pos = address_x
-    y_pos = address_y
+    x_pos = positioning['address_x']
+    y_pos = positioning['address_y']
     
     # Add each line with information about its bounding box
-    for i, line_info in enumerate(bounding_boxes):
+    for i, line_info in enumerate(positioning['bounding_boxes']):
         svg.hershey_text(x_pos, y_pos, line_info['text'], ADDRESS_SIZE, {
             'stroke': 'black', 
             'stroke-width': '0.5'
@@ -149,17 +177,53 @@ def render_postcard_label(params: PostcardLabelParams) -> str:
         y_pos += LINE_SPACING
     
     # Add a comment about the maximum width line and positioning
-    svg._add_element(f'<!-- Maximum width line: "{max_width_line}" - Width: {max_width:.2f}mm -->')
-    svg._add_element(f'<!-- Address centered at position: ({address_x:.2f}, {address_y:.2f})mm -->')
-    svg._add_element(f'<!-- Line count: {line_count}, Total height: {total_height:.2f}mm -->')
+    svg._add_element(f'<!-- Maximum width line: "{positioning["max_width_line"]}" - Width: {positioning["max_width"]:.2f}mm -->')
+    svg._add_element(f'<!-- Address centered at position: ({positioning["address_x"]:.2f}, {positioning["address_y"]:.2f})mm -->')
+    svg._add_element(f'<!-- Line count: {positioning["line_count"]}, Total height: {positioning["total_height"]:.2f}mm -->')
     
     # End the address group
     svg.end_group()
+
+
+def render_postcard_label(params: PostcardLabelParams) -> str:
+    """
+    Creates a 6x4 inch (152.4 x 101.6 mm) postcard SVG with address label
+    
+    Args:
+        params: Validated PostcardLabelParams object containing address details
+        
+    Returns:
+        SVG content as a string
+    """
+    # Create SVG (6x4 inches = 152.4 x 101.6 mm)
+    svg = SVGBuilder(POSTCARD_WIDTH, POSTCARD_HEIGHT)
+    
+    # Add white background
+    svg.rect(0, 0, POSTCARD_WIDTH, POSTCARD_HEIGHT, {'fill': 'white', 'stroke': 'none'})
+    
+    # Add stamp placeholder in top right corner
+    stamp_x = POSTCARD_WIDTH - STAMP_WIDTH - STAMP_MARGIN
+    stamp_y = STAMP_MARGIN
+    svg.rect(stamp_x, stamp_y, STAMP_WIDTH, STAMP_HEIGHT, {
+        'stroke': 'black', 
+        'stroke-width': '0.5', 
+        'stroke-dasharray': '2,1',
+        'fill': 'none'
+    })
+    
+    # Add from address
+    add_from_address(svg)
+    
+    # Process address information
+    text_lines = get_address_lines(params)
+    positioning = calculate_address_positioning(svg, text_lines)
+    add_address_to_svg(svg, text_lines, positioning)
     
     return svg.to_string()
 
+
 @postcards_bp.route('/label', methods=['POST'])
-def postcard_label():
+def postcard_label() -> Response:
     """
     Endpoint for postcard label generation
     
@@ -174,6 +238,38 @@ def postcard_label():
     
     Returns:
         SVG content for a 6x4 postcard with the address label
+    """
+    data = get_request_data()
+    
+    # If no data, return error
+    if not data:
+        return jsonify({
+            'status': 'error',
+            'message': 'No data provided. Please send either JSON or form data with the required fields.'
+        }), 400
+    
+    # Validate and process data
+    try:
+        body = PostcardLabelParams(**data)
+    except ValidationError as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Validation error: {str(e)}'
+        }), 400
+    
+    # Generate SVG for the postcard
+    svg_content = render_postcard_label(body)
+    
+    # Return SVG content with appropriate content type
+    return Response(svg_content, mimetype='image/svg+xml')
+
+
+def get_request_data() -> Dict[str, str]:
+    """
+    Extracts data from either JSON or form data in the request
+    
+    Returns:
+        Dictionary with request data or empty dict if no data found
     """
     data = {}
     
@@ -190,32 +286,4 @@ def postcard_label():
     if not data and request.form:
         data = request.form.to_dict()
     
-    # If still no data, return error
-    if not data:
-        return jsonify({
-            'status': 'error',
-            'message': 'No data provided. Please send either JSON or form data with the required fields.'
-        }), 400
-    
-    # Manually create and validate the model
-    try:
-        body = PostcardLabelParams(
-            address_line_1=data.get('address_line_1', ''),
-            address_line_2=data.get('address_line_2', ''),
-            city=data.get('city', ''),
-            state=data.get('state', ''),
-            zipcode=data.get('zipcode', ''),
-            name=data.get('name', ''),
-            country=data.get('country', '')
-        )
-    except ValidationError as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Validation error: {str(e)}'
-        }), 400
-    
-    # Generate SVG for the postcard
-    svg_content = render_postcard_label(body)
-    
-    # Return SVG content with appropriate content type
-    return Response(svg_content, mimetype='image/svg+xml')
+    return data
