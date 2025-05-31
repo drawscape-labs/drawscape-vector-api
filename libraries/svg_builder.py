@@ -1194,8 +1194,6 @@ class SVGBuilder:
             ('polygon', r'<polygon([^>]*)>')
         ]
         
-        print(f"Pen color: {color}")
-
         # First, remove any style attributes that might override our stroke settings
         for element_name, element_pattern in elements_with_strokes:
             def remove_style_attr(match):

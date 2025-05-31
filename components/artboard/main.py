@@ -37,25 +37,6 @@ def artboard_render_blueprint(body: BlueprintTitleParams):
         The SVG content is a blueprint-style diagram with title, subtitle, border, and optional
         schematic content from an external URL.
     """
-    # Debug output: Print all parameters
-    print("\n--- Render Blueprint Parameters ---")
-    for field_name, field_value in body.dict().items():
-        if isinstance(field_value, list) and field_name == "legend":
-            print(f"{field_name}: {len(field_value)} items")
-            for i, item in enumerate(field_value):
-                print(f"  Legend Item {i+1}:")
-                if hasattr(item, 'dict'):
-                    # Item is a Pydantic model
-                    for item_field, item_value in item.dict().items():
-                        print(f"    {item_field}: {item_value}")
-                else:
-                    # Item is already a dictionary
-                    for item_field, item_value in item.items():
-                        print(f"    {item_field}: {item_value}")
-        else:
-            print(f"{field_name}: {field_value}")
-    print("------------------------------------\n")
-    
     legend_data = [{"label": item.label, "content": item.content} for item in body.legend]
     return render_blueprint(
         title=body.title,

@@ -39,6 +39,9 @@ def hello():
 
 if __name__ == '__main__':
     print("Starting Flask server...")
-    print(f"Server is running on http://127.0.0.1:5000")
+    # Get port from environment variable (Heroku) or default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Server is running on port {port}")
     print("Press CTRL+C to quit")
-    app.run(debug=True)
+    # Bind to 0.0.0.0 to make it accessible from outside the Docker container
+    app.run(debug=True, host='0.0.0.0', port=port)

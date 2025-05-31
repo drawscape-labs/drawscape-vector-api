@@ -1,0 +1,20 @@
+services:
+  drawscape-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"  # Back to port 5000 now that AirPlay is disabled
+    volumes:
+      # Mount source code for live development
+      - ./components:/app/components
+      - ./libraries:/app/libraries
+      - ./server.py:/app/server.py
+      - ./test.py:/app/test.py
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - env=dev
+    command: python server.py
+    stdin_open: true
+    tty: true 
