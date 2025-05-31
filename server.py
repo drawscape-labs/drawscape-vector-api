@@ -43,5 +43,9 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"Server is running on port {port}")
     print("Press CTRL+C to quit")
+    
+    # Disable debug mode in production
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    
     # Bind to 0.0.0.0 to make it accessible from outside the Docker container
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
