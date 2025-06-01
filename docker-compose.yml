@@ -31,7 +31,7 @@ services:
     working_dir: /usr/src/app
     env_file:
       - .env
-    command: rq worker --url redis://redis:6379 high default low svg-generation
+    command: rq worker --url redis://redis:6379 background
 
   redis:
     image: redis:alpine

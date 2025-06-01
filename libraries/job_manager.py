@@ -1,5 +1,5 @@
 """
-Job queue manager for background SVG generation tasks
+Job queue manager for background tasks
 """
 import os
 from rq import Queue
@@ -11,45 +11,33 @@ from rq.job import Job
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
 redis_conn = Redis.from_url(redis_url)
 
-# Create queues for different priority levels
-high_queue = Queue('high', connection=redis_conn)
-default_queue = Queue('default', connection=redis_conn)
-low_queue = Queue('low', connection=redis_conn)
-svg_queue = Queue('svg-generation', connection=redis_conn)
+# Create single background queue
+background_queue = Queue('background', connection=redis_conn)
 
 
-def enqueue_svg_generation(width, height, pattern_type, filename, priority='default'):
+def enqueue_background_job(task_function, *args, **kwargs):
     """
-    Queue an SVG generation job
+    Queue a background job
     
     Args:
-        width: SVG width in mm
-        height: SVG height in mm
-        pattern_type: Type of pattern to generate
-        filename: Output filename
-        priority: Job priority ('high', 'default', 'low')
+        task_function: The function to execute (as string path like 'workers.svg_tasks.generate_complex_svg')
+        *args: Positional arguments to pass to the task function
+        **kwargs: Keyword arguments to pass to the task function
+                 Special kwargs:
+                 - job_timeout: Timeout for the job (default '5m')
     
     Returns:
         Job object with job ID and status
     """
-    # Select queue based on priority
-    queue_map = {
-        'high': high_queue,
-        'default': default_queue,
-        'low': low_queue,
-        'svg': svg_queue
-    }
-    
-    queue = queue_map.get(priority, default_queue)
+    # Extract job_timeout from kwargs if provided, default to 5 minutes
+    job_timeout = kwargs.pop('job_timeout', '5m')
     
     # Enqueue the job
-    job = queue.enqueue(
-        'workers.svg_tasks.generate_complex_svg',
-        width=width,
-        height=height,
-        pattern_type=pattern_type,
-        output_filename=filename,
-        job_timeout='5m'  # 5 minute timeout
+    job = background_queue.enqueue(
+        task_function,
+        *args,
+        **kwargs,
+        job_timeout=job_timeout
     )
     
     return job

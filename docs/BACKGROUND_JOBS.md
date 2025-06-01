@@ -1,63 +1,43 @@
-# Background Jobs with RQ (Redis Queue) - Internal Use Only
+# Background Jobs
 
-This document explains how to use the background job processing system in the Drawscape Vector API. Background jobs are used internally within the application and are not exposed through API endpoints.
+This document explains how to use the background job processing system in the Drawscape Vector API.
 
 ## Overview
 
-We use RQ (Redis Queue) for background job processing. This allows us to offload time-consuming SVG generation tasks to background workers, keeping the API responsive. Jobs are queued internally from within existing functions and components.
+We use RQ (Redis Queue) for background job processing. This allows us to offload time-consuming tasks to background workers, keeping the API responsive. Jobs are queued internally from within your application code.
 
-## Local Development Setup
+## How It Works
 
-### 1. Using Docker Compose (Recommended)
+- **Queue**: Single `background` queue handles all job types
+- **Worker**: Processes jobs from the queue in the background
+- **Tasks**: Located in `workers/` directory (e.g., `workers.svg_tasks.generate_complex_svg`)
 
-```bash
-# Start all services (web server + worker)
-docker-compose up
-
-# Or run in background
-docker-compose up -d
-```
-
-### 2. Manual Setup
-
-```bash
-# Terminal 1: Start Redis
-redis-server
-
-# Terminal 2: Start Flask server
-python server.py
-
-# Terminal 3: Start RQ worker
-export REDIS_URL=redis://localhost:6379
-rq worker --url $REDIS_URL high default low svg-generation
-```
-
-## Using Background Jobs in Your Code
+## Basic Usage
 
 ### Import the Job Manager
 
 ```python
-from queues.job_manager import enqueue_svg_generation, get_job_status
+from libraries.job_manager import enqueue_background_job, get_job_status
 ```
 
-### Queue a Job from Any Function
+### Queue a Background Job
 
 ```python
 def your_function():
-    # Queue a background job
-    job = enqueue_svg_generation(
+    # Queue any background task
+    job = enqueue_background_job(
+        'workers.svg_tasks.generate_complex_svg',
         width=200,
         height=200,
         pattern_type='spiral',
-        filename='output.svg',
-        priority='default'  # 'high', 'default', 'low', or 'svg'
+        output_filename='output.svg'
     )
     
     # Store job.id if you need to track progress
     return {"processing": True, "job_id": job.id}
 ```
 
-### Check Job Status Internally
+### Check Job Status
 
 ```python
 status = get_job_status(job_id)
@@ -68,113 +48,161 @@ if status['status'] == 'finished':
 elif status['status'] == 'failed':
     error = status['error']
     # Handle the error
+else:
+    # Still processing: 'queued', 'started', etc.
+    pass
+```
+
+## Common Job Examples
+
+### SVG Generation
+```python
+job = enqueue_background_job(
+    'workers.svg_tasks.generate_complex_svg',
+    width=210,
+    height=297,
+    pattern_type='spiral',
+    output_filename='complex_spiral.svg'
+)
+```
+
+### Email Notifications
+```python
+job = enqueue_background_job(
+    'workers.email_tasks.send_notification',
+    recipient='user@example.com',
+    subject='Your order is ready',
+    template='order_complete'
+)
+```
+
+### Data Processing
+```python
+job = enqueue_background_job(
+    'workers.data_tasks.process_file',
+    file_path='/uploads/data.csv',
+    format='json',
+    job_timeout='15m'
+)
+```
+
+### Batch Operations
+```python
+job = enqueue_background_job(
+    'workers.file_tasks.process_batch',
+    file_list=['file1.csv', 'file2.csv', 'file3.csv'],
+    operation='convert_to_json',
+    job_timeout='20m'
+)
+```
+
+## Integration Example
+
+```python
+# components/artboard/main.py
+from flask import Blueprint, jsonify, request
+from libraries.job_manager import enqueue_background_job
+from libraries.svg_builder import SVGBuilder
+
+@artboard_bp.route('/create', methods=['POST'])
+def create_artboard():
+    data = request.get_json()
+    
+    # Quick response for simple SVGs
+    if data.get('complexity') == 'simple':
+        svg = SVGBuilder(data['width'], data['height'])
+        svg.rect(10, 10, 50, 50)
+        return jsonify({"svg": svg.to_string()})
+    
+    # Background job for complex patterns
+    else:
+        job = enqueue_background_job(
+            'workers.svg_tasks.generate_complex_svg',
+            width=data['width'],
+            height=data['height'],
+            pattern_type=data.get('pattern', 'spiral'),
+            output_filename=f"artboard_{data['id']}.svg"
+        )
+        
+        return jsonify({
+            "status": "generating",
+            "job_id": job.id,
+            "message": "Complex pattern queued for generation"
+        })
 ```
 
 ## Creating New Background Tasks
 
-1. Add your task function to `workers/svg_tasks.py`:
+1. **Add your task function** to `workers/svg_tasks.py` or create new worker modules:
 
 ```python
-def my_new_task(param1, param2):
-    """Your background task logic"""
-    # Process data
-    result = process_something(param1, param2)
-    return result
+def generate_postcard_svg(recipient, message, template_name):
+    """Generate a postcard with custom message"""
+    from libraries.svg_builder import SVGBuilder
+    import os
+    
+    svg = SVGBuilder(210, 148)  # A6 postcard size
+    
+    # Add template design and message
+    if template_name == 'birthday':
+        # Add birthday decorations
+        pass
+    
+    svg.hershey_text(105, 74, message, 0.5)
+    
+    # Save and return path
+    filename = f"postcard_{recipient}_{template_name}.svg"
+    output_path = os.path.join('output', 'postcards', filename)
+    
+    with open(output_path, 'w') as f:
+        f.write(svg.to_string())
+        
+    return output_path
 ```
 
-2. Create a queue function in `queues/job_manager.py`:
+2. **Queue it** from your application code:
 
 ```python
-def enqueue_my_task(param1, param2):
-    job = default_queue.enqueue(
-        'workers.svg_tasks.my_new_task',
-        param1=param1,
-        param2=param2,
-        job_timeout='10m'
-    )
-    return job
+job = enqueue_background_job(
+    'workers.svg_tasks.generate_postcard_svg',
+    recipient='John Doe',
+    message='Happy Birthday!',
+    template_name='birthday',
+    job_timeout='2m'
+)
 ```
 
-3. Use it in your application code:
+## Function Reference
 
+### `enqueue_background_job(task_function, *args, **kwargs)`
+
+**Parameters:**
+- `task_function`: String path to worker function (e.g., `'workers.svg_tasks.generate_complex_svg'`)
+- `*args`: Positional arguments to pass to the task function
+- `**kwargs`: Keyword arguments to pass to the task function
+- `job_timeout`: Optional timeout (default: `'5m'`)
+
+**Returns:** Job object with `.id` property for tracking
+
+### `get_job_status(job_id)`
+
+**Returns:** Dictionary with job information:
 ```python
-from queues.job_manager import enqueue_my_task
-
-def some_endpoint():
-    # Queue the job internally
-    job = enqueue_my_task(data['param1'], data['param2'])
-    # Return response without exposing job details
-    return {"status": "processing"}
+{
+    'id': 'job-uuid',
+    'status': 'finished',  # 'queued', 'started', 'finished', 'failed'
+    'result': '/path/to/output.svg',  # Return value from task function
+    'error': None,  # Error message if failed
+    'created_at': datetime,
+    'started_at': datetime,
+    'ended_at': datetime
+}
 ```
-
-## Deployment to Heroku
-
-1. Ensure your `Procfile` includes the worker process:
-```
-web: gunicorn server:app --bind 0.0.0.0:$PORT
-worker: rq worker --url $REDIS_URL high default low svg-generation
-```
-
-2. Add Redis addon to your Heroku app:
-```bash
-heroku addons:create heroku-redis:hobby-dev
-```
-
-3. Scale your workers:
-```bash
-# Start 1 worker dyno
-heroku ps:scale worker=1
-
-# Check worker logs
-heroku logs --tail --dyno=worker
-```
-
-## Monitoring
-
-### Local Development
-- RQ Dashboard: Install `pip install rq-dashboard` and run `rq-dashboard`
-- Redis CLI: `redis-cli` to inspect queues directly
-- Worker logs: `docker-compose logs worker`
-
-### Production (Heroku)
-- Worker logs: `heroku logs --tail --dyno=worker`
-- Monitor through your application's internal logging
-
-## Available Pattern Types
-
-- `spiral`: Generates a spiral pattern for pen plotting
-- `grid`: Generates a grid pattern with customizable spacing
 
 ## Best Practices
 
-1. **Timeouts**: Set appropriate job timeouts based on complexity
-2. **Priority Queues**: 
-   - `high`: User-initiated, time-sensitive tasks
-   - `default`: Regular processing
-   - `low`: Batch jobs, cleanup tasks
-   - `svg-generation`: Dedicated queue for SVG tasks
-3. **Error Handling**: Implement fallback to synchronous processing if queues are unavailable
-4. **File Storage**: Generated files are saved to `tests/output/generated/`
-
-## Troubleshooting
-
-### Redis Connection Issues
-- Check `REDIS_URL` environment variable
-- Ensure Redis is running: `redis-cli ping`
-
-### Worker Not Processing Jobs
-- Check worker logs for errors
-- Verify worker is connected to correct Redis instance
-- Ensure worker is listening to correct queue names
-
-### Jobs Stuck in Queue
-- Check if workers are running: `docker-compose ps`
-- Scale workers if needed: `heroku ps:scale worker=2`
-
-## Example Integration
-
-See `examples/background_job_integration.py` for complete examples of:
-- Batch processing with background jobs
-- Fallback to synchronous processing
-- Priority-based job queuing
-- Internal job tracking without exposing implementation details 
+- **Use background jobs for**: Complex SVG generation, batch processing, email sending, data export/import
+- **Use synchronous processing for**: Simple shapes, quick calculations, user-interactive features
+- **Set timeouts**: Use `job_timeout` parameter for long-running tasks
+- **Organize tasks**: Group related functions in worker modules (`workers.svg_tasks`, `workers.email_tasks`)
+- **Handle errors**: Always check job status and handle failures gracefully 
