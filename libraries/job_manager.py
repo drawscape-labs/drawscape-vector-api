@@ -9,7 +9,14 @@ from rq.job import Job
 
 # Initialize Redis connection using environment variable
 redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
-redis_conn = Redis.from_url(redis_url)
+
+# Configure Redis connection with SSL handling for Heroku
+if redis_url.startswith('rediss://'):
+    # For SSL Redis connections (like Heroku Redis), skip SSL cert verification
+    redis_conn = Redis.from_url(redis_url, ssl_cert_reqs=None)
+else:
+    # For non-SSL connections (local development)
+    redis_conn = Redis.from_url(redis_url)
 
 # Create single background queue
 background_queue = Queue('background', connection=redis_conn)

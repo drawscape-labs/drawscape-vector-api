@@ -22,7 +22,11 @@ def test_redis_connection():
     
     try:
         # Create Redis client
-        r = redis.from_url(redis_url, decode_responses=True)
+        # Handle SSL connections (like Heroku Redis) properly
+        if redis_url.startswith('rediss://'):
+            r = redis.from_url(redis_url, decode_responses=True, ssl_cert_reqs=None)
+        else:
+            r = redis.from_url(redis_url, decode_responses=True)
         
         # Test connection
         print("\n1. Testing connection...")
