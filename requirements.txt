@@ -10,5 +10,10 @@ psutil
 pydantic>=2.0.0
 flask-pydantic>=0.12.0
 Hershey-Fonts
+redis>=5.0.0
 https://software-download.bantamtools.com/nd/api/nextdraw_api.zip#egg=nextdraw-api
 # drawscape-factorio==0.15.22  # Commented out as it was in environment.yml
+pytest>=7.0.0
+pytest-cov>=4.0.0
+rq==1.15.1
+gunicorn==21.2.0

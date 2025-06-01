@@ -36,3 +36,9 @@ db.sqlite3-journal
 
 # Environment variables
 .env
+
+# Coverage files
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/

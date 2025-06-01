@@ -1,1 +1,2 @@
-web: gunicorn --preload --workers=3 --bind 0.0.0.0:$PORT server:app 
+web: gunicorn server:app --bind 0.0.0.0:$PORT
+worker: rq worker --url $REDIS_URL high default low svg-generation 

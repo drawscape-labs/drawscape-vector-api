@@ -1,20 +1,45 @@
 services:
-  drawscape-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  web:
+    build: .
+    container_name: drawscape_python_web
     ports:
-      - "5000:5000"  # Back to port 5000 now that AirPlay is disabled
-    volumes:
-      # Mount source code for live development
-      - ./components:/app/components
-      - ./libraries:/app/libraries
-      - ./server.py:/app/server.py
-      - ./test.py:/app/test.py
+      - '5000:5000'
+    depends_on:
+      - redis
     environment:
-      - FLASK_ENV=development
-      - FLASK_DEBUG=1
-      - env=dev
-    command: python server.py
-    stdin_open: true
-    tty: true 
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      FLASK_ENV: development
+      PORT: 5000
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    env_file:
+      - .env
+    command: gunicorn server:app --bind 0.0.0.0:5000 --reload
+
+  worker:
+    build: .
+    container_name: drawscape_python_worker
+    depends_on:
+      - redis
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    env_file:
+      - .env
+    command: rq worker --url redis://redis:6379 high default low svg-generation
+
+  redis:
+    image: redis:alpine
+    container_name: drawscape_redis_python
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data: 
