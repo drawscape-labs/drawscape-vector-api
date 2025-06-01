@@ -11,3 +11,5 @@ affect the SVG files when we send them to a plotter to draw.
 
 The NODE_API.yaml file defines the node api endpoints that we can use. 
 Reference this when using the /libraires/node_api.py wrapper.
+
+NEVER try and push code to prodcution, always ask me to do that manually
