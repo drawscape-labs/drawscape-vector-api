@@ -1,0 +1,2197 @@
+openapi: 3.0.0
+info:
+  title: Drawscape API
+  version: 1.0.0
+paths:
+  /api/v1/artboards:
+    get:
+      parameters:
+        0:
+          name: schematic_id
+          in: query
+          schema:
+            type: string
+        1:
+          name: offset
+          in: query
+          schema:
+            type: number
+        2:
+          name: limit
+          in: query
+          schema:
+            type: number
+        3:
+          name: sort
+          in: query
+          schema:
+            type: string
+      response:
+        type: object
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              schematic_id:
+                type: string
+              type:
+                type: string
+              schematic_vector_id:
+                type: string
+              title:
+                type: string
+              data:
+                type: object
+            required:
+              0: schematic_id
+              1: type
+      response:
+        type: object
+  /api/v1/project-images:
+    get:
+      parameters:
+        0:
+          name: offset
+          in: query
+          schema:
+            type: number
+        1:
+          name: limit
+          in: query
+          schema:
+            type: number
+        2:
+          name: project_id
+          in: query
+          schema:
+            type: number
+        3:
+          name: sort
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            project_id:
+              type: number
+            type:
+              type: string
+            url:
+              type: string
+            filename:
+              type: string
+            pinterest_pin_id:
+              type: string
+            thumbnail:
+              type: string
+            file_type:
+              type: string
+            size:
+              type: number
+            size_human_readable:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              type:
+                type: string
+              file_name:
+                type: string
+              content_type:
+                type: string
+              size:
+                type: number
+            required:
+              0: project_id
+              1: file_name
+              2: content_type
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+  /api/v1/project-videos:
+    get:
+      parameters:
+        0:
+          name: project_id
+          in: query
+          schema:
+            type: number
+        1:
+          name: type
+          in: query
+          schema:
+            type: string
+        2:
+          name: offset
+          in: query
+          schema:
+            type: number
+        3:
+          name: limit
+          in: query
+          schema:
+            type: number
+        4:
+          name: sort_by
+          in: query
+          schema:
+            type: string
+        5:
+          name: sort_direction
+          in: query
+          schema:
+            type: string
+        6:
+          name: project_published
+          in: query
+          schema:
+            type: boolean
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            project_id:
+              type: number
+            url:
+              type: string
+            filename:
+              type: string
+            title:
+              type: string
+            thumbnail:
+              type: string
+            file_type:
+              type: string
+            size:
+              type: number
+            size_human_readable:
+              type: string
+            duration:
+              type: number
+            duration_human_readable:
+              type: string
+            type:
+              type: string
+            tiktok_post_id:
+              type: string
+            instagram_reel_id:
+              type: string
+            youtube_short_id:
+              type: string
+            pinterest_pin_id:
+              type: string
+            tiktok_url:
+              type: string
+            instagram_url:
+              type: string
+            youtube_url:
+              type: string
+            pinterest_url:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              file_name:
+                type: string
+              content_type:
+                type: string
+              size:
+                type: number
+              type:
+                type: string
+              title:
+                type: object
+            required:
+              0: project_id
+              1: file_name
+              2: content_type
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+  /api/v1/projects:
+    get:
+      parameters:
+        0:
+          name: sort
+          in: query
+          schema:
+            type: string
+        1:
+          name: offset
+          in: query
+          schema:
+            type: number
+        2:
+          name: limit
+          in: query
+          schema:
+            type: number
+        3:
+          name: published
+          in: query
+          schema:
+            type: boolean
+        4:
+          name: category
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: number
+            title:
+              type: string
+            svg:
+              type: string
+            svg_label:
+              type: string
+            youtube_timelapse_url:
+              type: string
+            instagram_post_url:
+              type: string
+            category:
+              type: string
+            published:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              category:
+                type: string
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+  /api/v1/schematic-sources:
+    get:
+      parameters:
+        0:
+          name: schematic_id
+          in: query
+          schema:
+            type: string
+        1:
+          name: offset
+          in: query
+          schema:
+            type: number
+        2:
+          name: limit
+          in: query
+          schema:
+            type: number
+        3:
+          name: sort
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            schematic_id:
+              type: string
+              format: uuid
+            type:
+              type: string
+            url:
+              type: string
+            filename:
+              type: string
+            source:
+              type: string
+            size:
+              type: number
+            size_human_readable:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              schematic_id:
+                type: string
+              type:
+                type: string
+              fileName:
+                type: string
+              contentType:
+                type: string
+              source:
+                type: string
+              size:
+                type: number
+            required:
+              0: schematic_id
+              1: type
+              2: fileName
+              3: contentType
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+  /api/v1/schematic-vectors:
+    get:
+      parameters:
+        0:
+          name: schematic_id
+          in: query
+          schema:
+            type: string
+        1:
+          name: published
+          in: query
+          schema:
+            type: boolean
+        2:
+          name: optimized
+          in: query
+          schema:
+            type: boolean
+        3:
+          name: offset
+          in: query
+          schema:
+            type: number
+        4:
+          name: limit
+          in: query
+          schema:
+            type: number
+        5:
+          name: sort
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            schematic_id:
+              type: string
+              format: uuid
+            type:
+              type: string
+            url:
+              type: string
+            filename:
+              type: string
+            size:
+              type: number
+            title:
+              type: string
+            orientation:
+              type: string
+            optimized:
+              type: boolean
+            published:
+              type: boolean
+            size_human_readable:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              schematic_id:
+                type: string
+              type:
+                type: string
+              fileName:
+                type: string
+              contentType:
+                type: string
+              size:
+                type: number
+              title:
+                type: string
+              orientation:
+                type: string
+            required:
+              0: schematic_id
+              1: type
+              2: fileName
+              3: contentType
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+  /api/v1/schematics:
+    get:
+      parameters:
+        0:
+          name: sort
+          in: query
+          schema:
+            type: string
+        1:
+          name: offset
+          in: query
+          schema:
+            type: number
+        2:
+          name: limit
+          in: query
+          schema:
+            type: number
+        3:
+          name: status
+          in: query
+          schema:
+            type: string
+        4:
+          name: category
+          in: query
+          schema:
+            type: string
+        5:
+          name: categories
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        6:
+          name: manufacturer
+          in: query
+          schema:
+            type: string
+        7:
+          name: published
+          in: query
+          schema:
+            type: string
+        8:
+          name: slug
+          in: query
+          schema:
+            type: string
+        9:
+          name: key
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            category:
+              type: string
+            manufacturer:
+              type: string
+            model:
+              type: string
+            title:
+              type: string
+            slug:
+              type: string
+            description:
+              type: string
+            key:
+              type: string
+            legend:
+              type: object
+            display_title:
+              type: string
+            display_subtitle:
+              type: string
+            status:
+              type: string
+            published:
+              type: boolean
+            search_vector:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              category:
+                type: string
+              manufacturer:
+                type: string
+              model:
+                type: string
+              title:
+                type: string
+              slug:
+                type: string
+              description:
+                type: string
+              status:
+                type: string
+              published:
+                type: boolean
+              key:
+                type: string
+            required:
+              0: category
+              1: title
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+  /api/v1/social-posts:
+    get:
+      parameters:
+        0:
+          name: resource_type
+          in: query
+          schema:
+            type: string
+        1:
+          name: resource_id
+          in: query
+          schema:
+            type: string
+        2:
+          name: platform
+          in: query
+          schema:
+            type: string
+        3:
+          name: platform_post_type
+          in: query
+          schema:
+            type: string
+      response:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: number
+            resource_type:
+              type: string
+            resource_id:
+              type: string
+            status:
+              type: string
+            scheduled_at:
+              type: string
+              format: date-time
+            published_at:
+              type: string
+              format: date-time
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+            platform:
+              type: string
+            platform_post_id:
+              type: string
+            platform_post_type:
+              type: string
+            platform_post_url:
+              type: string
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resource_type:
+                type: string
+              resource_id:
+                type: string
+              status:
+                type: string
+              scheduled_at:
+                type: string
+              published_at:
+                type: string
+              platform:
+                type: string
+              platform_post_id:
+                type: string
+              platform_post_type:
+                type: string
+            required:
+              0: resource_type
+              1: resource_id
+              2: platform
+              3: platform_post_type
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+  /api/v1/artboards/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              type:
+                type: string
+              schematic_vector_id:
+                type: string
+              data:
+                type: object
+      response:
+        type: object
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/klaviyo/postcards:
+    get:
+      parameters:
+        0:
+          name: limit
+          in: query
+          schema:
+            type: number
+        1:
+          name: page
+          in: query
+          schema:
+            type: number
+      response:
+        type: object
+  /api/v1/pinterest/authorize:
+    get:
+      response:
+        type: object
+  /api/v1/pinterest/boards:
+    get:
+      response:
+        type: object
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+            required:
+              0: name
+      response:
+        type: object
+  /api/v1/pinterest/generate:
+    get:
+      parameters:
+        0:
+          name: code
+          in: query
+          schema:
+            type: string
+          required: true
+        1:
+          name: state
+          in: query
+          schema:
+            type: string
+      response:
+        type: object
+  /api/v1/pinterest/pins:
+    get:
+      response:
+        type: object
+  /api/v1/project-images/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          project_id:
+            type: number
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          pinterest_pin_id:
+            type: string
+          thumbnail:
+            type: string
+          file_type:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              type:
+                type: string
+              url:
+                type: string
+              pinterest_pin_id:
+                type: string
+              thumbnail:
+                type: string
+              size:
+                type: number
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          project_id:
+            type: number
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          pinterest_pin_id:
+            type: string
+          thumbnail:
+            type: string
+          file_type:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/project-videos/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          project_id:
+            type: number
+          url:
+            type: string
+          filename:
+            type: string
+          title:
+            type: string
+          thumbnail:
+            type: string
+          file_type:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          duration:
+            type: number
+          duration_human_readable:
+            type: string
+          type:
+            type: string
+          tiktok_post_id:
+            type: string
+          instagram_reel_id:
+            type: string
+          youtube_short_id:
+            type: string
+          pinterest_pin_id:
+            type: string
+          tiktok_url:
+            type: string
+          instagram_url:
+            type: string
+          youtube_url:
+            type: string
+          pinterest_url:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              url:
+                type: string
+              thumbnail:
+                type: string
+              title:
+                type: string
+              file_type:
+                type: string
+              size:
+                type: number
+              duration:
+                type: number
+              type:
+                type: string
+              tiktok_post_id:
+                type: string
+              instagram_reel_id:
+                type: string
+              youtube_short_id:
+                type: string
+              pinterest_pin_id:
+                type: string
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          project_id:
+            type: number
+          url:
+            type: string
+          filename:
+            type: string
+          title:
+            type: string
+          thumbnail:
+            type: string
+          file_type:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          duration:
+            type: number
+          duration_human_readable:
+            type: string
+          type:
+            type: string
+          tiktok_post_id:
+            type: string
+          instagram_reel_id:
+            type: string
+          youtube_short_id:
+            type: string
+          pinterest_pin_id:
+            type: string
+          tiktok_url:
+            type: string
+          instagram_url:
+            type: string
+          youtube_url:
+            type: string
+          pinterest_url:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/projects/categories:
+    get:
+      response:
+        type: object
+  /api/v1/projects/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+          title:
+            type: string
+          svg:
+            type: string
+          svg_label:
+            type: string
+          youtube_timelapse_url:
+            type: string
+          instagram_post_url:
+            type: string
+          category:
+            type: string
+          published:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              published:
+                type: boolean
+              category:
+                type: string
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+          title:
+            type: string
+          svg:
+            type: string
+          svg_label:
+            type: string
+          youtube_timelapse_url:
+            type: string
+          instagram_post_url:
+            type: string
+          category:
+            type: string
+          published:
+            type: boolean
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/schematic-sources/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          schematic_id:
+            type: string
+            format: uuid
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          source:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              schematic_id:
+                type: string
+              type:
+                type: string
+              url:
+                type: string
+              filename:
+                type: string
+              source:
+                type: string
+              size:
+                type: number
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          schematic_id:
+            type: string
+            format: uuid
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          source:
+            type: string
+          size:
+            type: number
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/schematic-vectors/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          schematic_id:
+            type: string
+            format: uuid
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          size:
+            type: number
+          title:
+            type: string
+          orientation:
+            type: string
+          optimized:
+            type: boolean
+          published:
+            type: boolean
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              orientation:
+                type: string
+              schematic_id:
+                type: string
+              type:
+                type: string
+              url:
+                type: string
+              filename:
+                type: string
+              size:
+                type: number
+              optimized:
+                type: boolean
+              published:
+                type: boolean
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          schematic_id:
+            type: string
+            format: uuid
+          type:
+            type: string
+          url:
+            type: string
+          filename:
+            type: string
+          size:
+            type: number
+          title:
+            type: string
+          orientation:
+            type: string
+          optimized:
+            type: boolean
+          published:
+            type: boolean
+          size_human_readable:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/schematics/categories:
+    get:
+      response:
+        type: object
+  /api/v1/schematics/search:
+    get:
+      parameters:
+        0:
+          name: q
+          in: query
+          schema:
+            type: string
+          required: true
+        1:
+          name: limit
+          in: query
+          schema:
+            type: number
+        2:
+          name: offset
+          in: query
+          schema:
+            type: number
+        3:
+          name: category
+          in: query
+          schema:
+            type: string
+        4:
+          name: published
+          in: query
+          schema:
+            type: string
+        5:
+          name: tracking
+          in: query
+          schema:
+            type: boolean
+      response:
+        type: object
+  /api/v1/schematics/statuses:
+    get:
+      response:
+        type: object
+  /api/v1/schematics/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          category:
+            type: string
+          manufacturer:
+            type: string
+          model:
+            type: string
+          title:
+            type: string
+          slug:
+            type: string
+          description:
+            type: string
+          key:
+            type: string
+          legend:
+            type: object
+          display_title:
+            type: string
+          display_subtitle:
+            type: string
+          status:
+            type: string
+          published:
+            type: boolean
+          search_vector:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              category:
+                type: string
+              manufacturer:
+                type: string
+              model:
+                type: string
+              title:
+                type: string
+              slug:
+                type: string
+              description:
+                type: string
+              status:
+                type: string
+              published:
+                type: boolean
+              key:
+                type: string
+              display_title:
+                type: string
+              display_subtitle:
+                type: string
+              legend:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    label:
+                      type: string
+                    content:
+                      type: string
+                  required:
+                    0: label
+                    1: content
+      response:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+          category:
+            type: string
+          manufacturer:
+            type: string
+          model:
+            type: string
+          title:
+            type: string
+          slug:
+            type: string
+          description:
+            type: string
+          key:
+            type: string
+          legend:
+            type: object
+          display_title:
+            type: string
+          display_subtitle:
+            type: string
+          status:
+            type: string
+          published:
+            type: boolean
+          search_vector:
+            type: string
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/social-posts/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+          resource_type:
+            type: string
+          resource_id:
+            type: string
+          status:
+            type: string
+          scheduled_at:
+            type: string
+            format: date-time
+          published_at:
+            type: string
+            format: date-time
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+          platform:
+            type: string
+          platform_post_id:
+            type: string
+          platform_post_type:
+            type: string
+          platform_post_url:
+            type: string
+    put:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resource_type:
+                type: string
+              resource_id:
+                type: number
+              status:
+                type: string
+              scheduled_at:
+                type: string
+              published_at:
+                type: string
+              platform:
+                type: string
+              platform_post_id:
+                type: string
+              platform_post_type:
+                type: string
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+          resource_type:
+            type: string
+          resource_id:
+            type: string
+          status:
+            type: string
+          scheduled_at:
+            type: string
+            format: date-time
+          published_at:
+            type: string
+            format: date-time
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+          platform:
+            type: string
+          platform_post_id:
+            type: string
+          platform_post_type:
+            type: string
+          platform_post_url:
+            type: string
+    patch:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              resource_type:
+                type: string
+              resource_id:
+                type: number
+              status:
+                type: string
+              scheduled_at:
+                type: string
+              published_at:
+                type: string
+              platform:
+                type: string
+              platform_post_id:
+                type: string
+              platform_post_type:
+                type: string
+      response:
+        type: object
+        properties:
+          id:
+            type: number
+          resource_type:
+            type: string
+          resource_id:
+            type: string
+          status:
+            type: string
+          scheduled_at:
+            type: string
+            format: date-time
+          published_at:
+            type: string
+            format: date-time
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+          platform:
+            type: string
+          platform_post_id:
+            type: string
+          platform_post_type:
+            type: string
+          platform_post_url:
+            type: string
+    delete:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/artboards/{id}/download:
+    get:
+      parameters:
+        0:
+          name: type
+          in: query
+          schema:
+            type: string
+          required: true
+        1:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/artboards/{id}/color-schemes:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/artboards/{id}/render:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/pinterest/pins/{id}:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/project-images/{id}/download-url:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          url:
+            type: string
+          expires_in:
+            type: number
+  /api/v1/project-videos/{id}/download-url:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          url:
+            type: string
+          expires_in:
+            type: number
+  /api/v1/projects/{id}/generate-label:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          label:
+            type: string
+  /api/v1/schematic-sources/{id}/download-url:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          url:
+            type: string
+          expires_in:
+            type: number
+  /api/v1/schematic-vectors/{id}/download-url:
+    get:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          url:
+            type: string
+          expires_in:
+            type: number
+  /api/v1/schematics/slug/{slug}:
+    get:
+      parameters:
+        0:
+          name: slug
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/klaviyo/postcard-label:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              profile_id:
+                type: string
+            required:
+              0: profile_id
+      response:
+        type: object
+  /api/v1/pinterest/create-image-pin:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              image_url:
+                type: string
+              title:
+                type: string
+              description:
+                type: string
+              link:
+                type: string
+              board_id:
+                type: string
+              project_image_id:
+                type: string
+      response:
+        type: object
+  /api/v1/pinterest/create-video-pin:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              video_url:
+                type: string
+              title:
+                type: string
+              description:
+                type: string
+              link:
+                type: string
+              board_id:
+                type: string
+              project_video_id:
+                type: string
+      response:
+        type: object
+  /api/v1/pinterest/generate-pin-details:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              project_image_id:
+                type: string
+              project_video_id:
+                type: string
+            required:
+              0: project_id
+      response:
+        type: object
+  /api/v1/schematics/request:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              text:
+                type: string
+            required:
+              0: text
+      response:
+        type: object
+  /api/v1/social-posts/generate:
+    post:
+      parameters:
+        0:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              project_id:
+                type: number
+              social_platform:
+                type: string
+              post_type:
+                type: string
+            required:
+              0: project_id
+              1: social_platform
+              2: post_type
+      response:
+        type: object
+  /api/v1/artboards/{id}/save-share:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+            required:
+              0: email
+      response:
+        type: object
+  /api/v1/artboards/{id}/buy-now:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+  /api/v1/project-images/{id}/generate-thumbnails:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/project-videos/{id}/generate-thumbnail:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object
+        properties:
+          message:
+            type: string
+  /api/v1/projects/{id}/upload-svg:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              file:
+                type: object
+            required:
+              0: file
+      response:
+        type: object
+        properties:
+          success:
+            type: boolean
+  /api/v1/projects/{id}/remove-svg:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: number
+          required: true
+      response:
+        type: object
+        properties:
+          success:
+            type: boolean
+  /api/v1/schematic-vectors/{id}/replace:
+    post:
+      parameters:
+        0:
+          name: id
+          in: path
+          schema:
+            type: string
+          required: true
+        1:
+          name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              file:
+                type: object
+            required:
+              0: file
+      response:
+        type: object
+  /api/v1/schematics/{schematic_id}/generate-information:
+    post:
+      parameters:
+        0:
+          name: schematic_id
+          in: path
+          schema:
+            type: string
+          required: true
+      response:
+        type: object

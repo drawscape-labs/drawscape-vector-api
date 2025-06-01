@@ -6,6 +6,7 @@ from flask_cors import CORS
 from components.blueprints.main import blueprint_bp
 from components.artboard.main import artboard_bp
 from components.postcards.main import postcards_bp
+from components.schematics.main import schematics_bp
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -14,6 +15,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 app.register_blueprint(blueprint_bp)
 app.register_blueprint(artboard_bp)
 app.register_blueprint(postcards_bp)
+app.register_blueprint(schematics_bp)
 
 @app.before_request
 def log_route_call():
@@ -28,7 +30,7 @@ def index():
             <title>Hello, World!</title>
         </head>
         <body>
-            <h1>Hello, World! Drawscape API</h1>
+            <h1>Hello, World! Drawscape Vector API</h1>
         </body>h
     </html>
     """

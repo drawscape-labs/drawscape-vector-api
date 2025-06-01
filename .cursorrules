@@ -7,3 +7,7 @@ Pen Plotters can only draw lines and paths. There's no such thing as fill.
 
 Try and keep this in mind when we create SVG files and anything that might 
 affect the SVG files when we send them to a plotter to draw.
+
+
+The NODE_API.yaml file defines the node api endpoints that we can use. 
+Reference this when using the /libraires/node_api.py wrapper.
