@@ -26,7 +26,9 @@ docker-clean:
 	docker system prune -f
 
 hotfix:
-	git add . && git commit -m "Hotfix" && git push production main:master
+	@echo "Enter commit message for hotfix:"
+	@read -p "> " commit_msg; \
+	git add . && git commit -m "$$commit_msg" && git push production main:master
 
 # Convenience aliases for common commands
 build: docker-build

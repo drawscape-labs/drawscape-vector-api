@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask_pydantic import validate
 from pydantic import BaseModel, Field
 from typing import List
-from components.artboard.controller import render_test, render_blueprint
+from components.artboard.controller import render_test, render_blueprint, render_airport
 
 artboard_bp = Blueprint('artboard', __name__, url_prefix='/artboard')
 
@@ -19,6 +19,15 @@ class BlueprintTitleParams(BaseModel):
     orientation: str = Field(default="portrait", description="Paper orientation ('portrait' or 'landscape')")
     legend: List[LegendItem] = Field(default=[], description="List of legend items to display")
     schematic_url: str = Field(default="", description="URL to an SVG file to include in the blueprint")
+
+class AirportParams(BaseModel):
+    title: str = Field(default="Airport", description="Title for the airport diagram")
+    subtitle: str = Field(default="", description="Subtitle for the airport diagram")
+    paper_color: str = Field(default="white", description="Paper color for the airport diagram")
+    pen_color: str = Field(default="black", description="Pen color for the airport diagram")
+    size: str = Field(default="tabloid", description="Paper size ('a3', 'a4', 'letter', 'tabloid')")
+    orientation: str = Field(default="portrait", description="Paper orientation ('portrait' or 'landscape')")
+    schematic_url: str = Field(default="", description="URL to an SVG file to include in the airport diagram")
 
 @artboard_bp.route('/render-blueprint', methods=['POST'])
 @validate()
@@ -49,7 +58,32 @@ def artboard_render_blueprint(body: BlueprintTitleParams):
         schematic_url=body.schematic_url
     )
 
-
+@artboard_bp.route('/render-airport', methods=['POST'])
+@validate()
+def artboard_render_airport(body: AirportParams):
+    """
+    Endpoint for rendering an airport diagram as SVG.
+    
+    Accepts JSON data including title, subtitle, colors, size, orientation.
+    
+    Returns:
+        JSON object with the following structure:
+        {
+            "status": "success",
+            "svg_string": String containing the SVG markup
+        }
+        The SVG content is an airport-style diagram with title, subtitle, border, and optional
+        schematic content from an external URL.
+    """
+    return render_airport(
+        title=body.title,
+        subtitle=body.subtitle,
+        paper_color=body.paper_color,
+        pen_color=body.pen_color,
+        size=body.size,
+        orientation=body.orientation,
+        schematic_url=body.schematic_url
+    )
 
 @artboard_bp.route('/render-svg-test', methods=['GET'])
 def artboard_render_svg():

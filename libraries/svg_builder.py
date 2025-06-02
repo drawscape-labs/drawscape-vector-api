@@ -1078,6 +1078,56 @@ class SVGBuilder:
         
         return svg_attrs_str, inner_content
 
+    def process_schematic_strokes(self, svg_content: str, stroke_color: str) -> str:
+        """
+        Process SVG content to ensure consistent stroke attributes.
+        
+        This utility method:
+        1. Removes any existing style attributes that might override strokes
+        2. Adds default stroke attributes to all drawable elements
+        
+        Args:
+            svg_content: Raw SVG content string
+            stroke_color: Color to use for strokes
+            
+        Returns:
+            Processed SVG content string
+            
+        Example:
+            processed_svg = svg_builder.process_schematic_strokes(raw_svg, 'black')
+        """
+        # Define elements that can have strokes
+        stroke_elements = [
+            ('path', r'<path([^>]*)>'),
+            ('rect', r'<rect([^>]*)>'),
+            ('circle', r'<circle([^>]*)>'),
+            ('ellipse', r'<ellipse([^>]*)>'),
+            ('line', r'<line([^>]*)>'),
+            ('polyline', r'<polyline([^>]*)>'),
+            ('polygon', r'<polygon([^>]*)>')
+        ]
+        
+        # First pass: Remove style attributes that might contain stroke properties
+        for element_name, pattern in stroke_elements:
+            def remove_style(match):
+                attrs = match.group(1)
+                attrs = re.sub(r'\sstyle="[^"]*"', '', attrs)
+                return f'<{element_name}{attrs}>'
+            
+            svg_content = re.sub(pattern, remove_style, svg_content)
+        
+        # Second pass: Add stroke attributes if missing
+        for element_name, pattern in stroke_elements:
+            def add_stroke(match):
+                attrs = match.group(1)
+                if 'stroke=' not in attrs:
+                    attrs = f' stroke="{stroke_color}" stroke-width="1"{attrs}'
+                return f'<{element_name}{attrs}>'
+            
+            svg_content = re.sub(pattern, add_stroke, svg_content)
+        
+        return svg_content
+
     def add_schematic(self, svg_content: str, color: str = 'black') -> 'SVGBuilder':
         """
         Adds a schematic SVG to the canvas, scaling it to fit within the available space.
@@ -1183,37 +1233,8 @@ class SVGBuilder:
         # Add the schematic in a new group
         self.begin_group(group_attrs)
         
-        # Add default stroke attributes to all elements that can have strokes
-        elements_with_strokes = [
-            ('path', r'<path([^>]*)>'),
-            ('rect', r'<rect([^>]*)>'),
-            ('circle', r'<circle([^>]*)>'),
-            ('ellipse', r'<ellipse([^>]*)>'),
-            ('line', r'<line([^>]*)>'),
-            ('polyline', r'<polyline([^>]*)>'),
-            ('polygon', r'<polygon([^>]*)>')
-        ]
-        
-        # First, remove any style attributes that might override our stroke settings
-        for element_name, element_pattern in elements_with_strokes:
-            def remove_style_attr(match):
-                attrs = match.group(1)
-                # Remove style attributes that might contain stroke properties
-                attrs = re.sub(r'\sstyle="[^"]*"', '', attrs)
-                return f'<{element_name}{attrs}>'
-            
-            inner_content = re.sub(element_pattern, remove_style_attr, inner_content)
-
-        # Then add our stroke attributes if they don't exist
-        for element_name, element_pattern in elements_with_strokes:
-            def add_stroke_attrs(match):
-                attrs = match.group(1)
-                # Check if the element already has a stroke attribute
-                if 'stroke=' not in attrs:
-                    attrs = f' stroke="{color}" stroke-width="1"{attrs}'
-                return f'<{element_name}{attrs}>'
-            
-            inner_content = re.sub(element_pattern, add_stroke_attrs, inner_content)
+        # Process the SVG content to ensure consistent stroke attributes
+        inner_content = self.process_schematic_strokes(inner_content, color)
         
         # Add the inner content directly without the containing SVG tag
         self._add_element(inner_content)
