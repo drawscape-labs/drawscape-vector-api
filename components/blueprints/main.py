@@ -59,10 +59,14 @@ def container(json_data, svg_file_path):
     # Hard code legend details with today's date as the first element
     today_date = datetime.now().strftime("%Y-%m-%d")
 
-    title_text = json_data.get('title', '').upper()
+    title_text = json_data.get('title', '')
     subtitle_text = json_data.get('subtitle', '')
     combined_title = f"{title_text} - {subtitle_text}" if subtitle_text else title_text
     print(combined_title)
+
+    # Extract order ID and artist name
+    order_id = json_data.get('order_id', '')
+    artist_name = json_data.get('artist_name', '')
 
     # Load the SVG file and extract the time estimate
     nd1 = NextDraw()
@@ -91,11 +95,21 @@ def container(json_data, svg_file_path):
     legend_details = [
         {'name': 'Date', 'detail': today_date},
         {'name': 'Project', 'detail': combined_title},
-        {'name': 'Draw Time', 'detail': f"{time_estimate}"},
-        {'name': 'Pen Travel Distance', 'detail': f"{distance_pendown_ft:.1f} ft / {distance_pendown_m:.1f} m"},
-        {'name': 'Designed By', 'detail': 'Drawscape Inc.'},
-        {'name': 'Website', 'detail': 'https://drawscape.io'},
     ]
+    
+    # Conditionally add order ID and artist if they exist
+    if order_id:
+        legend_details.append({'name': 'Order ID', 'detail': order_id})
+    if artist_name:
+        legend_details.append({'name': 'Artist', 'detail': artist_name})
+    
+    # Add the remaining standard fields
+    legend_details.extend([
+        {'name': 'Draw Time', 'detail': f"{time_estimate}"},
+        {'name': 'Pen Travel', 'detail': f"{distance_pendown_ft:.1f} ft / {distance_pendown_m:.1f} m"},
+        {'name': 'Plotted By', 'detail': 'Drawscape Inc.'},
+        {'name': 'Website', 'detail': 'https://drawscape.io'},
+    ])
     
     # Start SVG content with XML declaration and dimensions with viewBox
     svg_content = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n'
@@ -164,6 +178,8 @@ def generate_label():
     Accepts JSON data containing:
         - project_name: Name of the project to display on the label
         - svg_url: URL to an SVG file to analyze for drawing time and pen travel distance
+        - order_id: (Optional) Order ID to display on the label
+        - artist_name: (Optional) Artist name to display on the label
     
     Returns:
         JSON object with the following fields:
@@ -174,13 +190,14 @@ def generate_label():
         The SVG content includes a legend with:
             - Date
             - Project name/title
+            - Order ID (if provided)
+            - Artist name (if provided)
             - Drawing time estimate
             - Pen travel distance
             - Designer information
             - Website information
     """
     data = request.get_json()
-
 
     if not data:
         return jsonify({
@@ -190,6 +207,8 @@ def generate_label():
 
     project_name = data.get('project_name')
     svg_url = data.get('svg_url')
+    order_id = data.get('order_id')
+    artist_name = data.get('artist_name')
 
     missing_fields = []
     if not project_name:
@@ -201,8 +220,6 @@ def generate_label():
             'status': 'error',
             'message': f"Missing field(s): {', '.join(missing_fields)}"
         }), 400
-
-    
 
     # Download the SVG file from the provided S3 URL
     try:
@@ -217,11 +234,13 @@ def generate_label():
         tmp.write(response.content)
         temp_svg_path = tmp.name
 
-    # Update the data to include the project name as title
+    # Update the data to include all the project details
     data['title'] = project_name
     data.setdefault('subtitle', '')
-
-
+    if order_id:
+        data['order_id'] = order_id
+    if artist_name:
+        data['artist_name'] = artist_name
 
     # Generate the SVG content using the container function
     svg_content = container(data, temp_svg_path)
